@@ -26,10 +26,14 @@ func main() {
 	g, ctx := errgroup.WithContext(context.Background())
 
 	g.Go(func() error { return errors.New("flight: sold out") })
-	// Not: book(context.Background(), ...). Nothing could cancel it.
 	g.Go(func() error { return book(ctx, "hotel") })
 	g.Go(func() error { return book(ctx, "car") })
 
-	fmt.Println(g.Wait())
-	// Not: using ctx after Wait. It is already cancelled.
+	// Wait blocks until all goroutines finish.
+	// Returns the first non-nil error encountered.
+	if err := g.Wait(); err != nil {
+		fmt.Printf("Group failed: %v\n", err)
+	} else {
+		fmt.Println("All tasks finished successfully.")
+	}
 }

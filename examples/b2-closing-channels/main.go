@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Producer: owns and closes the channel, respects the consumer's context
+// Producer: owns and closes the channel, respects the consumer's context.
 func produce(ctx context.Context) <-chan int {
 	out := make(chan int)
 
@@ -16,7 +16,7 @@ func produce(ctx context.Context) <-chan int {
 
 		for i := 1; i <= 10; i++ {
 			select {
-			case <-ctx.Done(): // Responds to consumer cancellation
+			case <-ctx.Done(): // responds to consumer cancellation
 				return
 			case out <- i:
 				time.Sleep(50 * time.Millisecond)
@@ -28,18 +28,18 @@ func produce(ctx context.Context) <-chan int {
 }
 
 func main() {
-	// Consumer creates and manages the context
+	// consumer creates and manages the context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	stream := produce(ctx)
 
-	// Consumer decides when to stop
+	// consumer decides when to stop
 	for n := range stream {
 		fmt.Println("Received:", n)
 		if n == 3 {
 			fmt.Println("Consumer had enough, canceling...")
-			cancel() // CONSUMER cancels the context
+			cancel() // CONSUMER cancels the context, so the producer can stop producing because nobody is listening anymore.
 			break
 		}
 	}

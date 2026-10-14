@@ -44,6 +44,8 @@ func square(ctx context.Context, in <-chan int) <-chan int {
 	return out
 }
 
+// Stage 3, Stage 4, etc.
+
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

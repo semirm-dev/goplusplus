@@ -1,2 +1,4 @@
 // 🌩 Go++ 🌩 #13 · Concurrency: Pipeline
-package track_b
+package main
+
+func main() {}

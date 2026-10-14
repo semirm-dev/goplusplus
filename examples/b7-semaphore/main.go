@@ -1,2 +1,4 @@
 // 🌩 Go++ 🌩 #14 · Concurrency: Counting semaphore
-package track_b
+package main
+
+func main() {}

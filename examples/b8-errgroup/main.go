@@ -1,2 +1,4 @@
 // 🌩 Go++ 🌩 #15 · Concurrency: errgroup
-package track_b
+package main
+
+func main() {}

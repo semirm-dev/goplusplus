@@ -57,7 +57,7 @@ func main() {
 	for n := range squared {
 		fmt.Println(n) // 1, 4, 9
 		if n == 9 {
-			// Stopping early: cancel tells every stage upstream to return.
+			// Optionally, stop the pipeline early: cancel tells every stage upstream to return.
 			cancel()
 			break
 		}

@@ -8,6 +8,17 @@ import (
 	"time"
 )
 
+// Alternative implementation using a struct.
+// type SemaphoreLimiter struct {
+// 	sem chan struct{}
+// }
+//
+// func NewSemaphoreLimiter(maxConcurrent int) *SemaphoreLimiter {
+// 	return &SemaphoreLimiter{
+// 		sem: make(chan struct{}, maxConcurrent),
+// 	}
+// }
+
 // Its capacity is the limit.
 type Limiter chan struct{}
 
@@ -37,8 +48,7 @@ func main() {
 				fmt.Println("task", i, "gave up:", err)
 				return
 			}
-			// Release only what you took.
-			// Not: defer limiter.Release() above the error check.
+
 			defer limiter.Release()
 
 			fmt.Println("task", i, "running")

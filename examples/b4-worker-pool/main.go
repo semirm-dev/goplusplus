@@ -18,9 +18,7 @@ type Result struct {
 }
 
 // Worker: CONSUMER of jobs, PRODUCER of results.
-func worker(jobs <-chan Job, results chan<- Result, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func worker(jobs <-chan Job, results chan<- Result) {
 	// consumer of jobs
 	for job := range jobs {
 		// Simulate work
@@ -44,8 +42,7 @@ func main() {
 
 	// 1. Spawn worker pool
 	for range numWorkers {
-		wg.Add(1)
-		go worker(jobs, results, &wg)
+		wg.Go(func() { worker(jobs, results) })
 	}
 
 	// 2. Stream jobs in the background (PRODUCER of jobs)

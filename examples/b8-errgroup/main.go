@@ -32,6 +32,7 @@ func main() {
 	// Wait blocks until all goroutines finish.
 	// Returns the first non-nil error encountered.
 	if err := g.Wait(); err != nil {
+		// ctx cancelled, do the cleanup.
 		fmt.Printf("Group failed: %v\n", err)
 	} else {
 		fmt.Println("All tasks finished successfully.")

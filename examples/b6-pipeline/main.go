@@ -6,11 +6,13 @@ import (
 	"fmt"
 )
 
-// Source: sends every value, then closes out.
+// Stage 1: produce values, then close its out channel.
 func source(ctx context.Context, nums ...int) <-chan int {
 	out := make(chan int)
+
 	go func() {
 		defer close(out)
+
 		for _, n := range nums {
 			select {
 			case out <- n:
@@ -19,15 +21,17 @@ func source(ctx context.Context, nums ...int) <-chan int {
 			}
 		}
 	}()
+
 	return out
 }
 
-// Stage: the function that returns a channel is the one that closes it.
-// Not: a plain out <- n. If main stops reading, this blocks forever.
+// Stage 2: transform values, then close its out channel.
 func square(ctx context.Context, in <-chan int) <-chan int {
 	out := make(chan int)
+
 	go func() {
 		defer close(out)
+
 		for n := range in {
 			select {
 			case out <- n * n:
@@ -36,6 +40,7 @@ func square(ctx context.Context, in <-chan int) <-chan int {
 			}
 		}
 	}()
+
 	return out
 }
 
@@ -43,8 +48,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	for n := range square(ctx, source(ctx, 1, 2, 3, 4, 5)) {
-		fmt.Println(n)
+	// Assemble the pipeline
+	numbers := source(ctx, 1, 2, 3, 4, 5)
+	squared := square(ctx, numbers)
+
+	for n := range squared {
+		fmt.Println(n) // 1, 4, 9, 16, 25
 		if n == 9 {
 			// Stopping early: cancel tells every stage upstream to return.
 			cancel()

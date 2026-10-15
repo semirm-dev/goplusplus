@@ -8,7 +8,10 @@ import (
 	"time"
 )
 
-// Fan-Out worker
+// Fan-Out worker.
+// Worker could be: file read, file parsing, writing to database, etc.
+// Optionally, we can spawn multiple workers to process the input stream in parallel.
+// Useful when this specific worker is a bottleneck and we need to scale.
 func worker(ctx context.Context, id int, in <-chan int) <-chan string {
 	out := make(chan string)
 

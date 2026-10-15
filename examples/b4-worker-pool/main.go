@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -18,16 +19,19 @@ type Result struct {
 }
 
 // Worker: CONSUMER of jobs, PRODUCER of results.
-func worker(jobs <-chan Job, results chan<- Result) {
+func worker(ctx context.Context, jobs <-chan Job, results chan<- Result) {
 	// consumer of jobs
 	for job := range jobs {
 		// Simulate work
 		time.Sleep(50 * time.Millisecond)
 
-		// producer of results
-		results <- Result{
+		select {
+		case <-ctx.Done():
+			return
+		case results <- Result{ // producer of results
 			Job:    job,
 			Output: job.Input * 2,
+		}:
 		}
 	}
 }
@@ -40,17 +44,25 @@ func main() {
 	results := make(chan Result, numJobs)
 	var wg sync.WaitGroup
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// 1. Spawn worker pool
 	for range numWorkers {
-		wg.Go(func() { worker(jobs, results) })
+		wg.Go(func() { worker(ctx, jobs, results) })
 	}
 
 	// 2. Stream jobs in the background (PRODUCER of jobs)
 	go func() {
+		defer close(jobs) // Signal workers: no more jobs.
+
 		for j := 1; j <= numJobs; j++ {
-			jobs <- Job{ID: j, Input: j}
+			select {
+			case <-ctx.Done():
+				return
+			case jobs <- Job{ID: j, Input: j}:
+			}
 		}
-		close(jobs) // Signal workers: no more jobs.
 	}()
 
 	// 3. Coordinator: wait for workers to finish, then close results once.

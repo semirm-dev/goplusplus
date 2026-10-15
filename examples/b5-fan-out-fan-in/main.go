@@ -9,7 +9,6 @@ import (
 )
 
 // Fan-Out worker: one of several copies reading the same input.
-// The work could be anything: parsing many JSON files, processing many images, etc.
 func worker(ctx context.Context, id int, in <-chan int) <-chan string {
 	out := make(chan string)
 
@@ -17,7 +16,8 @@ func worker(ctx context.Context, id int, in <-chan int) <-chan string {
 		defer close(out)
 
 		for n := range in {
-			time.Sleep(50 * time.Millisecond) // work
+			// Simulate work, could be anything: processing a JSON file, an image, etc.
+			time.Sleep(50 * time.Millisecond)
 
 			select {
 			case <-ctx.Done():
@@ -65,6 +65,7 @@ func main() {
 	go func() {
 		defer close(input)
 
+		// like worker pool, this could be anything: many JSON files to read and parse, many images to process, etc.
 		for i := 1; i <= 6; i++ {
 			select {
 			case <-ctx.Done():

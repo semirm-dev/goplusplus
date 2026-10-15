@@ -22,7 +22,7 @@ type Result struct {
 func worker(ctx context.Context, jobs <-chan Job, results chan<- Result) {
 	// consumer of jobs
 	for job := range jobs {
-		// Simulate work
+		// Simulate work, could be anything: processing a JSON file, an image, etc.
 		time.Sleep(50 * time.Millisecond)
 
 		select {
@@ -53,6 +53,7 @@ func main() {
 	go func() {
 		defer close(jobs) // Signal workers: no more jobs.
 
+		// this could be anything: many JSON files to read and parse, many images to process, etc.
 		for j := 1; j <= numJobs; j++ {
 			select {
 			case <-ctx.Done():

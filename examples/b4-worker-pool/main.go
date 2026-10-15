@@ -28,10 +28,7 @@ func worker(ctx context.Context, jobs <-chan Job, results chan<- Result) {
 		select {
 		case <-ctx.Done():
 			return
-		case results <- Result{ // producer of results
-			Job:    job,
-			Output: job.Input * 2,
-		}:
+		case results <- Result{Job: job, Output: job.Input * 2}: // producer of results
 		}
 	}
 }

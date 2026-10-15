@@ -32,7 +32,7 @@ func worker(ctx context.Context, id int, in <-chan int) <-chan string {
 
 // Fan-In multiplexer: merges multiple channels into one
 func fanIn(ctx context.Context, outs ...<-chan string) <-chan string {
-	merged := make(chan string)
+	results := make(chan string)
 	var wg sync.WaitGroup
 
 	for _, out := range outs {
@@ -41,7 +41,7 @@ func fanIn(ctx context.Context, outs ...<-chan string) <-chan string {
 				select {
 				case <-ctx.Done():
 					return
-				case merged <- s:
+				case results <- s:
 				}
 			}
 		})
@@ -49,10 +49,10 @@ func fanIn(ctx context.Context, outs ...<-chan string) <-chan string {
 
 	go func() {
 		wg.Wait()
-		close(merged)
+		close(results)
 	}()
 
-	return merged
+	return results
 }
 
 func main() {
@@ -81,9 +81,9 @@ func main() {
 	w3 := worker(ctx, 3, input)
 
 	// Fan-In to aggregate all output channels
-	merged := fanIn(ctx, w1, w2, w3)
+	results := fanIn(ctx, w1, w2, w3)
 
-	for s := range merged {
+	for s := range results {
 		fmt.Println(s)
 	}
 }

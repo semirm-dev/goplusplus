@@ -9,7 +9,7 @@ import (
 )
 
 // Fan-Out worker: one of several copies reading the same input.
-// The job could be anything: parsing many JSON files, processing many images, etc.
+// The work could be anything: parsing many JSON files, processing many images, etc.
 func worker(ctx context.Context, id int, in <-chan int) <-chan string {
 	out := make(chan string)
 

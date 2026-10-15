@@ -19,9 +19,9 @@ type Result struct {
 }
 
 // Worker: CONSUMER of jobs, PRODUCER of results.
-func worker(ctx context.Context, jobs <-chan Job, results chan<- Result) {
+func worker(ctx context.Context, input <-chan Job, results chan<- Result) {
 	// consumer of jobs
-	for job := range jobs {
+	for job := range input {
 		// Simulate work, could be anything: processing a JSON file, an image, etc.
 		time.Sleep(50 * time.Millisecond)
 
@@ -37,7 +37,7 @@ func main() {
 	const numJobs = 10
 	const numWorkers = 3
 
-	jobs := make(chan Job, numJobs)
+	input := make(chan Job, numJobs)
 	results := make(chan Result, numJobs)
 	var wg sync.WaitGroup
 
@@ -46,19 +46,19 @@ func main() {
 
 	// 1. Spawn worker pool
 	for range numWorkers {
-		wg.Go(func() { worker(ctx, jobs, results) })
+		wg.Go(func() { worker(ctx, input, results) })
 	}
 
 	// 2. Stream jobs in the background (PRODUCER of jobs)
 	go func() {
-		defer close(jobs) // Signal workers: no more jobs.
+		defer close(input) // Signal workers: no more jobs.
 
 		// this could be anything: many JSON files to read and parse, many images to process, etc.
 		for j := 1; j <= numJobs; j++ {
 			select {
 			case <-ctx.Done():
 				return
-			case jobs <- Job{ID: j, Input: j}:
+			case input <- Job{ID: j, Input: j}:
 			}
 		}
 	}()

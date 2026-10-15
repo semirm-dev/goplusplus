@@ -34,18 +34,15 @@ func worker(ctx context.Context, input <-chan Job, results chan<- Result) {
 }
 
 func main() {
-	const numJobs = 10
-	const numWorkers = 3
-
-	input := make(chan Job, numJobs)
-	results := make(chan Result, numJobs)
+	input := make(chan Job)
+	results := make(chan Result)
 	var wg sync.WaitGroup
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// 1. Spawn worker pool
-	for range numWorkers {
+	for range 3 {
 		wg.Go(func() { worker(ctx, input, results) })
 	}
 
@@ -54,7 +51,7 @@ func main() {
 		defer close(input) // Signal workers: no more jobs.
 
 		// this could be anything: many JSON files to read and parse, many images to process, etc.
-		for j := 1; j <= numJobs; j++ {
+		for j := 1; j <= 10; j++ {
 			select {
 			case <-ctx.Done():
 				return

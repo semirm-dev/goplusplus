@@ -20,7 +20,7 @@ func worker(ctx context.Context, id int, in <-chan int) <-chan string {
 			time.Sleep(50 * time.Millisecond)
 
 			select {
-			case <-ctx.Done(): // sending to a channel is a wait operation, topic #B1 point 3.
+			case <-ctx.Done(): // sending to a channel can be a wait operation, topic #B1 point 3.
 				return
 			case out <- fmt.Sprintf("worker %d: %d", id, n):
 			}
@@ -39,7 +39,7 @@ func fanIn(ctx context.Context, outs ...<-chan string) <-chan string {
 		wg.Go(func() {
 			for s := range out {
 				select {
-				case <-ctx.Done(): // sending to a channel is a wait operation, topic #B1 point 3.
+				case <-ctx.Done(): // sending to a channel can be a wait operation, topic #B1 point 3.
 					return
 				case results <- s:
 				}
@@ -68,7 +68,7 @@ func main() {
 		// like worker pool, this could be anything: many JSON files to read and parse, many images to process, etc.
 		for i := 1; i <= 6; i++ {
 			select {
-			case <-ctx.Done(): // sending to a channel is a wait operation, topic #B1 point 3.
+			case <-ctx.Done(): // sending to a channel can be a wait operation, topic #B1 point 3.
 				return
 			case input <- i:
 			}

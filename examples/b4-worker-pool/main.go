@@ -26,7 +26,7 @@ func worker(ctx context.Context, input <-chan Job, results chan<- Result) {
 		time.Sleep(50 * time.Millisecond)
 
 		select {
-		case <-ctx.Done(): // sending to a channel is a wait operation, topic #B1 point 3.
+		case <-ctx.Done(): // sending to a channel can be a wait operation, topic #B1 point 3.
 			return
 		case results <- Result{Job: job, Output: job.Input * 2}: // producer of results
 		}
@@ -53,7 +53,7 @@ func main() {
 		// this could be anything: many JSON files to read and parse, many images to process, etc.
 		for j := 1; j <= 10; j++ {
 			select {
-			case <-ctx.Done(): // sending to a channel is a wait operation, topic #B1 point 3.
+			case <-ctx.Done(): // sending to a channel can be a wait operation, topic #B1 point 3.
 				return
 			case input <- Job{ID: j, Input: j}:
 			}

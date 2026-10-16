@@ -23,7 +23,7 @@ func readLines(ctx context.Context, lines ...string) <-chan string {
 
 		for _, line := range lines {
 			select {
-			case <-ctx.Done():
+			case <-ctx.Done(): // sending to a channel can be a wait operation, topic #B1 point 3.
 				return
 			case out <- line:
 			}
@@ -48,7 +48,7 @@ func parse(ctx context.Context, in <-chan string) <-chan Order {
 			}
 
 			select {
-			case <-ctx.Done():
+			case <-ctx.Done(): // sending to a channel can be a wait operation, topic #B1 point 3.
 				return
 			case out <- Order{ID: id, Amount: amount}:
 			}
@@ -69,7 +69,7 @@ func addTax(ctx context.Context, in <-chan Order) <-chan Order {
 			o.Total = o.Amount * 1.2
 
 			select {
-			case <-ctx.Done():
+			case <-ctx.Done(): // sending to a channel can be a wait operation, topic #B1 point 3.
 				return
 			case out <- o:
 			}

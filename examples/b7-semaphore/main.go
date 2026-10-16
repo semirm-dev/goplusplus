@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #14 · Concurrency: Counting semaphore
+// 🌩 Go++ 🌩 #14 · Concurrency: Semaphore
 package main
 
 import (
@@ -44,6 +44,7 @@ func main() {
 			ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 			defer cancel()
 
+			// If you have thousands of tasks to potentially pile up, call Acquire before the goroutine starts - before wg.Go(func() {}).
 			if err := limiter.Acquire(ctx); err != nil {
 				fmt.Println("task", i, "gave up:", err)
 				return

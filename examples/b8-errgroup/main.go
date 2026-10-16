@@ -32,7 +32,7 @@ func main() {
 	// Wait blocks until all goroutines finish.
 	// Returns the first non-nil error encountered.
 	if err := g.Wait(); err != nil {
-		// Something failed: undo what succeeded, using a fresh context.
+		// e.g. undo what succeeded, with a fresh ctx (this one is already cancelled).
 		fmt.Printf("Group failed: %v\n", err)
 	} else {
 		fmt.Println("All tasks finished successfully.")

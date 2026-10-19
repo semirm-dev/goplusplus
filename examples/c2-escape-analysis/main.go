@@ -1,10 +1,9 @@
-// 🌩 Go++ 🌩 #17 · Memory: Ask the compiler :: WIP
+// 🌩 Go++ 🌩 #17 · Memory: Ask the compiler
 package main
 
 import "fmt"
 
 // Run: go build -gcflags="-m" .
-// The comments show what the compiler says about each line.
 
 type User struct {
 	ID   int

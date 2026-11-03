@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ids     = []int{7, 91447} // read at runtime, so the compiler can't fold them
+	ids     = []int{7, 9999} // read at runtime, so the compiler can't fold them
 	sinkAny any
 )
 
@@ -32,7 +32,7 @@ func main() {
 
 	// Testing it: constants point at read-only data and 0-255 come from a static table,
 	// so boxing them doesn't allocate. Use a variable above 255.
-	fmt.Println("any, const:    ", testing.AllocsPerRun(100, func() { sinkAny = 91447 }))
+	fmt.Println("any, const:    ", testing.AllocsPerRun(100, func() { sinkAny = 9999 }))
 	fmt.Println("any, 7:        ", testing.AllocsPerRun(100, func() { sinkAny = small }))
-	fmt.Println("any, 91447:    ", testing.AllocsPerRun(100, func() { sinkAny = big }))
+	fmt.Println("any, 9999:     ", testing.AllocsPerRun(100, func() { sinkAny = big }))
 }

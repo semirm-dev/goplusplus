@@ -21,8 +21,9 @@ var (
 
 // #### Example 1: BufferPool ####
 
-// BufferPool pools *bytes.Buffer values and drops any buffer that grew past maxCap,
-// so one huge payload can't pin memory.
+// BufferPool pools *bytes.Buffer values. Use it when you need a *bytes.Buffer.
+// A *bytes.Buffer grows to fit whatever is written, so Put drops any buffer that grew
+// past maxCap, and one huge payload can't pin memory.
 type BufferPool struct {
 	pool   sync.Pool
 	maxCap int
@@ -50,7 +51,8 @@ func (p *BufferPool) Put(b *bytes.Buffer) {
 	p.pool.Put(b)
 }
 
-// BufferPool example: the whole payload in memory, the buffer grows to fit it.
+// BufferPool example: encode JSON into a pooled *bytes.Buffer;
+// the buffer grows to fit the payload.
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	buf := bufferPool.Get()
 	defer bufferPool.Put(buf)
@@ -67,8 +69,10 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 // #### Example 2: BytePool ####
 
-// BytePool pools fixed-size byte slices. It stores *[]byte because
-// putting a plain []byte into any allocates (staticcheck SA6002).
+// BytePool pools fixed-size byte slices. Use it when you need a []byte.
+// The slice never grows, so no maxCap is needed. An append-style []byte
+// (strconv.AppendInt, time.AppendFormat) does grow, and needs a maxCap like BufferPool.
+// It stores *[]byte because putting a plain []byte into any allocates (staticcheck SA6002).
 type BytePool struct {
 	pool sync.Pool
 	size int
@@ -79,13 +83,13 @@ func NewBytePool(size int) *BytePool {
 	p := &BytePool{size: size}
 	p.pool.New = func() any {
 		b := make([]byte, size)
-		return &b // need to use/return pointer
+		return &b // a pointer, so Put doesn't allocate
 	}
 	return p
 }
 
 func (p *BytePool) Get() *[]byte {
-	return p.pool.Get().(*[]byte) // remember to use *[]byte
+	return p.pool.Get().(*[]byte) // the *[]byte that New returns
 }
 
 func (p *BytePool) Put(b *[]byte) {
@@ -96,7 +100,8 @@ func (p *BytePool) Put(b *[]byte) {
 	p.pool.Put(b)
 }
 
-// BytePool example: the payload streams in chunks through a fixed-size buffer.
+// BytePool example: stream through a pooled []byte with io.CopyBuffer;
+// a fixed-size chunk never grows.
 func copyPooled(dst io.Writer, src io.Reader) (int64, error) {
 	bp := bytePool.Get()
 	defer bytePool.Put(bp)

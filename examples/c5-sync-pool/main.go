@@ -46,7 +46,7 @@ func (p *BufferPool) Put(b *bytes.Buffer) {
 	if b.Cap() > p.maxCap {
 		return // too big to keep; drop it and let GC free it
 	}
-	b.Reset() // reset length, keep capacity
+	b.Reset() // reset length to 0, keep capacity
 	p.pool.Put(b)
 }
 
@@ -85,14 +85,14 @@ func NewBytePool(size int) *BytePool {
 }
 
 func (p *BytePool) Get() *[]byte {
-	return p.pool.Get().(*[]byte) // remember to use pointer []byte
+	return p.pool.Get().(*[]byte) // remember to use *[]byte
 }
 
 func (p *BytePool) Put(b *[]byte) {
 	if cap(*b) != p.size {
 		return // foreign or re-allocated slice
 	}
-	*b = (*b)[:p.size] // reset length, keep capacity
+	*b = (*b)[:p.size] // restore full length (p.size), keep capacity
 	p.pool.Put(b)
 }
 

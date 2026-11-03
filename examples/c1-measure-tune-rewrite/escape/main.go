@@ -1,9 +1,9 @@
-// 🌩 Go++ 🌩 #17 · Memory: Ask the compiler
+// 🌩 Go++ 🌩 #16 · Memory: Measure, tune, rewrite
 package main
 
-import "fmt"
+// Run: go build -gcflags="-m" ./escape
 
-// Run: go build -gcflags="-m" .
+var sink int
 
 type User struct {
 	ID   int
@@ -15,7 +15,7 @@ func newUser() User {
 }
 
 func newUserPtr() *User {
-	return &User{ID: 2, Name: "ben"} // escapes to heap: the address outlives the function
+	return &User{ID: 2, Name: "ben"} // escapes to heap: the pointer outlives the function
 }
 
 func sumFixed() int {
@@ -29,7 +29,7 @@ func sumN(n int) int {
 }
 
 func sumBig() int {
-	buf := make([]byte, 128<<10) // escapes to heap: over the 64 KB stack limit
+	buf := make([]byte, 128*1024) // escapes to heap: over the 64 KB stack limit
 	return len(buf)
 }
 
@@ -39,10 +39,8 @@ func counter() func() int {
 }
 
 func main() {
-	u := newUser()
-	p := newUserPtr() // inlined here, so &User{...} does not escape anymore
-	next := counter()
-
-	// ...any: every argument escapes to heap
-	fmt.Println(u.ID, p.ID, sumFixed(), sumN(10), sumBig(), next())
+	// newUserPtr is inlined: its body is copied here.
+	// The User never leaves main, so it stays on the stack.
+	p := newUserPtr()
+	sink = p.ID
 }

@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #16 · Memory: Measure, tune, rewrite :: WIP
+// 🌩 Go++ 🌩 #16 · Memory: Measure, tune, rewrite
 //
 // A small service to practice on. See README.md for the walkthrough.
 //

@@ -8,6 +8,7 @@ something real: **measure** where memory goes, **tune** the GC, and only then
 report.go       ReportNaive (how it usually starts) and ReportTuned (the rewrite)
 report_test.go  a test that both produce the same bytes, plus two benchmarks
 main.go         the service: /report on :8080, pprof on localhost:6060
+escape/main.go  one small function for each reason a value goes to the heap
 ```
 
 All output below is from a real run on Go 1.27. Your numbers will be different,
@@ -114,6 +115,41 @@ Click a function in any view to focus on it, `Esc` or the search box to reset.
 - `runtime.growslice`: an `append` without enough capacity
 - `runtime.mapassign` / map growth: a map without a size hint
 - anything from `sync.Pool.New`: the pool keeps creating new objects (see step 4)
+
+### Ask the compiler why
+
+pprof shows *where* the memory goes. The compiler shows *why* a value ends up on the
+heap:
+
+```bash
+go build -gcflags="-m" .
+```
+
+```
+./report.go:25:39: o.ID escapes to heap
+./report.go:25:45: o.Customer escapes to heap
+./report.go:25:57: o.Amount escapes to heap
+```
+
+That's the `Sprintf` line in `ReportNaive`. `Sprintf` takes `...any`, so every argument
+is copied to the heap. `ReportTuned` has no line like that.
+
+A value goes to the heap when:
+
+- its address outlives the function
+- it's too big for the stack: over 64 KB for `make` and `new`, over 128 KB for a declared variable
+- its size isn't known at compile time (since Go 1.25, up to 32 bytes still stay on the stack)
+- it's put into an interface the compiler can't see through, like the `...any` of `fmt.Println`
+- a closure that outlives the function captures it
+
+`escape/main.go` has one small function for each:
+
+```bash
+go build -gcflags="-m" ./escape
+```
+
+Inlining changes the answer. `newUserPtr` escapes on its own, but not once it's inlined
+into `main`. So read the output, don't guess.
 
 ---
 
@@ -241,6 +277,9 @@ rewrite, then measure and tune again.
 # benchmark + profile
 go test -run '^$' -bench . -benchmem -memprofile mem.out
 go tool pprof -http=:8081 mem.out
+
+# what escapes to the heap, and why
+go build -gcflags="-m" .
 
 # running service (needs: import _ "net/http/pprof" and an HTTP server)
 go tool pprof -http=:8081 -sample_index=alloc_space "http://localhost:6060/debug/pprof/allocs?seconds=30"

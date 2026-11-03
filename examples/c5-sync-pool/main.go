@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #23 · Memory: sync.Pool :: WIP
+// 🌩 Go++ 🌩 #20 · Memory: sync.Pool
 package main
 
 import (

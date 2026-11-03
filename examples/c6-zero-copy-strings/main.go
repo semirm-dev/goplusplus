@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #24 · Memory: Before you reach for unsafe :: WIP
+// 🌩 Go++ 🌩 #21 · Memory: Zero-copy strings
 package main
 
 import (

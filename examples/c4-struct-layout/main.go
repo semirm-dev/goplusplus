@@ -18,6 +18,10 @@ type Node struct {
 	Parent int32 // index into the same []Node, -1 means none
 }
 
+// Use the fieldalignment tool to fix the struct layout.
+// go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest
+// fieldalignment -fix -diff ./examples/c4-struct-layout
+
 // Field order: 24 bytes, each bool gets 7 bytes of padding.
 type BadOrder struct {
 	a bool  // 1 byte + 7 padding

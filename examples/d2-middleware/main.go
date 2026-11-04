@@ -3,16 +3,12 @@ package main
 
 import (
 	"crypto/rand"
-	"errors"
-	"fmt"
 	"io"
 	"log"
 	"log/slog"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"runtime/debug"
-	"strings"
 	"sync"
 	"time"
 
@@ -117,9 +113,10 @@ func maxBody(n int64) gin.HandlerFunc {
 	}
 }
 
+// Validate the JWT token here.
 func auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.GetHeader("Authorization") != "Bearer valid-token" { // in production: validate the JWT here
+		if c.GetHeader("Authorization") != "Bearer valid-token" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
@@ -153,48 +150,5 @@ func main() {
 	api := r.Group("/api")
 	api.Use(auth())
 
-	api.GET("/me", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"user_id": c.GetString("user_id")})
-	})
-	api.POST("/orders", func(c *gin.Context) {
-		var order map[string]any
-		if err := c.ShouldBindJSON(&order); err != nil {
-			if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
-				c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, gin.H{"error": "body too large"})
-				return
-			}
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
-			return
-		}
-		c.Status(http.StatusCreated)
-	})
-
-	send := func(name, method, path, body string, headers ...string) {
-		req := httptest.NewRequest(method, path, strings.NewReader(body))
-		for i := 0; i < len(headers); i += 2 {
-			req.Header.Set(headers[i], headers[i+1])
-		}
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-		fmt.Printf("%-14s -> %d %s\n", name, w.Code, w.Header().Get("Content-Encoding"))
-	}
-
-	send("panic", "GET", "/panic", "")
-	send("no token", "GET", "/api/me", "")
-	send("valid token", "GET", "/api/me", "", "Authorization", "Bearer valid-token")
-	send("gzip", "GET", "/api/me", "", "Authorization", "Bearer valid-token", "Accept-Encoding", "gzip")
-	send("preflight", "OPTIONS", "/api/me", "", "Origin", "https://app.example.com", "Access-Control-Request-Method", "GET")
-	send("2 MB body", "POST", "/api/orders", `{"note":"`+strings.Repeat("x", 2*1024*1024)+`"}`, "Authorization", "Bearer valid-token")
-
-	limited := 0
-	for range 20 {
-		req := httptest.NewRequest("GET", "/api/me", nil)
-		req.Header.Set("Authorization", "Bearer valid-token")
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-		if w.Code == http.StatusTooManyRequests {
-			limited++
-		}
-	}
-	fmt.Printf("%-14s -> %d of 20 got 429\n", "flood", limited)
+	// Configure server and listen for requests...
 }

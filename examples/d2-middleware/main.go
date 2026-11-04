@@ -141,7 +141,7 @@ func main() {
 		recovery(),                         // catch panics in everything after this
 		corsPolicy(),                       // apply CORS to your needs
 		gzip.Gzip(gzip.DefaultCompression), // compresses responses if the client accepts gzip
-		rateLimit(10, 20),                  // add rate limiter to your needs,10 requests per second per IP, bursts up to 20
+		rateLimit(10, 20),                  // add rate limiter to your needs, 10 requests per second per IP, bursts up to 20
 		maxBody(1024*1024),                 // 1 MB
 	)
 

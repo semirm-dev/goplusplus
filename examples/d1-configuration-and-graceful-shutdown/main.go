@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #21 · Web servers: Timeouts and graceful shutdown
+// 🌩 Go++ 🌩 #21 · Web servers: Configuration and graceful shutdown
 package main
 
 import (
@@ -14,15 +14,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Gin has no limit on the request body.
+func maxBody(n int64) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, n)
+		c.Next()
+	}
+}
+
 func main() {
-	gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode) // debug mode is the default
 	r := gin.New()
+
+	// By default Gin trusts every proxy, so anyone can fake c.ClientIP() with X-Forwarded-For.
+	if err := r.SetTrustedProxies([]string{"10.0.0.0/8"}); err != nil { // your load balancer
+		log.Fatal(err)
+	}
+	r.Use(maxBody(1024 * 1024)) // 1 MB
+
 	r.GET("/slow", func(c *gin.Context) {
 		time.Sleep(3 * time.Second) // an in-flight request that Shutdown waits for
 		c.String(http.StatusOK, "done\n")
 	})
 
-	// Always configure your server properly, do not use default one.
+	// Configure your server properly, do not use default one.
 	// Not: r.Run(":8080"), no timeouts and no way to shut down cleanly.
 	srv := &http.Server{
 		Addr:              ":8080",
@@ -37,6 +52,7 @@ func main() {
 	defer stop()
 
 	go func() {
+		// No proxy in front of you? Use srv.ListenAndServeTLS(certFile, keyFile).
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}

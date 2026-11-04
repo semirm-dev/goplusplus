@@ -39,7 +39,8 @@ func main() {
 	}()
 
 	for i := 1; i <= 3; i++ {
-		// Safe to send: the consumer already exists and will receive values.
+		// Safe to send: the consumer already started (eventually) and will receive values.
+		// NOTE: we could wrap this in select case <-ctx.Done()... if the consumer could hang forever.
 		ch <- i
 	}
 	close(ch)

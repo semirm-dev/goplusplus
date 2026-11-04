@@ -94,7 +94,8 @@ func respondError(c *gin.Context, err error) {
 		status, msg = http.StatusConflict, "already exists"
 	}
 
-	log.Printf("%s %s: %v", c.Request.Method, c.Request.URL.Path, err) // the cause goes to the log
+	// use appropriate logger, and log the full error chain
+	log.Printf("%s %s: %v", c.Request.Method, c.Request.URL.Path, err)
 
 	// Not: c.JSON(500, gin.H{"error": err.Error()}), sends the driver error to the client.
 	c.JSON(status, gin.H{"error": msg})

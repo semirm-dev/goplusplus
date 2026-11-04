@@ -22,6 +22,7 @@ func main() {
 		c.String(http.StatusOK, "done\n")
 	})
 
+	// Always configure your server properly, do not use default one.
 	// Not: r.Run(":8080"), no timeouts and no way to shut down cleanly.
 	srv := &http.Server{
 		Addr:              ":8080",
@@ -43,6 +44,7 @@ func main() {
 	log.Println("listening on :8080, run: curl localhost:8080/slow, then press Ctrl+C")
 
 	<-ctx.Done()
+	stop() // optional: a second Ctrl+C or SIGTERM now kills the process right away
 	log.Println("shutting down, waiting for in-flight requests")
 
 	// Keep it under the time your platform gives you before SIGKILL.

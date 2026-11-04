@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #25 · Web servers: Test handlers without a server
+// 🌩 Go++ 🌩 #24 · Web servers: Test handlers without a server
 package main
 
 import (
@@ -16,5 +16,5 @@ func newRouter() *gin.Engine {
 }
 
 func main() {
-	newRouter().Run(":8080") // run the tests instead: go test ./examples/d5-test-handlers-without-a-server
+	newRouter().Run(":8080") // run the tests instead: go test ./examples/d4-test-handlers-without-a-server
 }

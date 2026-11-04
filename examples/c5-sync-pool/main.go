@@ -111,7 +111,7 @@ func copyPooled(dst io.Writer, src io.Reader) (int64, error) {
 func main() {
 	// BufferPool
 	rec := httptest.NewRecorder()
-	writeJSON(rec, http.StatusOK, map[string]int{"user_id": 91447})
+	writeJSON(rec, http.StatusOK, map[string]int{"user_id": 9999})
 	fmt.Print(rec.Code, " ", rec.Body.String())
 
 	// BytePool

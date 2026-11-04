@@ -18,7 +18,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.GET("/slow", func(c *gin.Context) {
-		time.Sleep(2 * time.Second) // an in-flight request that Shutdown waits for
+		time.Sleep(3 * time.Second) // an in-flight request that Shutdown waits for
 		c.String(http.StatusOK, "done\n")
 	})
 

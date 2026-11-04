@@ -52,6 +52,8 @@ func (OrderService) Create(ctx context.Context, o Order) error {
 // handler.go
 // uses service
 
+var ErrInvalidInput = errors.New("invalid request")
+
 // Transport: the request type never leaves the handler.
 type createOrderRequest struct {
 	Item     string `json:"item" binding:"required"`
@@ -65,7 +67,8 @@ type OrderHandler struct {
 func (h *OrderHandler) Create(c *gin.Context) {
 	var req createOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		err = fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		respondError(c, err)
 		return
 	}
 
@@ -85,6 +88,8 @@ func (h *OrderHandler) Create(c *gin.Context) {
 func respondError(c *gin.Context, err error) {
 	status, msg := http.StatusInternalServerError, "internal error"
 	switch {
+	case errors.Is(err, ErrInvalidInput):
+		status, msg = http.StatusBadRequest, "invalid request"
 	case errors.Is(err, ErrConflict):
 		status, msg = http.StatusConflict, "already exists"
 	}

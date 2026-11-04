@@ -135,14 +135,14 @@ func main() {
 	}
 
 	r.Use(
-		requestID(),                        // first, so everything after it can use the ID
+		requestID(),                        // add request id first
 		otelgin.Middleware("orders"),       // tracing
-		logger(),                           // logs every request
-		recovery(),                         // catch panics in everything after this
-		corsPolicy(),                       // apply CORS to your needs
-		gzip.Gzip(gzip.DefaultCompression), // compresses responses if the client accepts gzip
-		rateLimit(10, 20),                  // add rate limiter to your needs, 10 requests per second per IP, bursts up to 20
-		maxBody(1024*1024),                 // 1 MB
+		logger(),                           // log every request
+		recovery(),                         // catch panics below
+		corsPolicy(),                       // apply CORS
+		gzip.Gzip(gzip.DefaultCompression), // (optional) gzip responses
+		rateLimit(10, 20),                  // rate limiter
+		maxBody(1024*1024),                 // max request body
 	)
 
 	r.GET("/panic", func(c *gin.Context) { panic("boom") })

@@ -32,7 +32,7 @@ func RequireCSRF(c *gin.Context) {
 		return
 	}
 
-	// Do not compare like regular strings, otherwise it fails timing attack => cookie == header
+	// Not: cookie == header, it stops at the first wrong character and leaks timing.
 	cookie, _ := c.Cookie("csrf")
 	header := c.GetHeader("X-CSRF-Token")
 	if header == "" || subtle.ConstantTimeCompare([]byte(cookie), []byte(header)) != 1 {
@@ -48,10 +48,10 @@ func main() {
 
 	r.GET("/auth/csrf", IssueCSRF)
 
-	// Not: GET /auth/logout, a link or an <img> could log the user out.
 	auth := r.Group("/auth", RequireCSRF)
-	auth.POST("/refresh", func(c *gin.Context) { /* see #26 */ })
-	auth.POST("/logout", func(c *gin.Context) { /* see #26 */ })
+	auth.POST("/login", func(c *gin.Context) {})
+	auth.POST("/refresh", func(c *gin.Context) {})
+	auth.POST("/logout", func(c *gin.Context) {})
 
 	// Configure server and listen for requests...
 }

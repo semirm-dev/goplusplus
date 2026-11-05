@@ -94,6 +94,8 @@ func (a *Auth) issue(c *gin.Context, userID, familyID string) {
 
 	setRefreshCookie(c, refresh, 30*24*60*60)
 
+	// a response with a token must never be cached, by the browser or a proxy
+	c.Header("Cache-Control", "no-store")
 	c.JSON(http.StatusOK, gin.H{"access_token": access})
 }
 

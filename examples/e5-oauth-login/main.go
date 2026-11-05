@@ -40,13 +40,15 @@ func (a *Auth) GoogleLogin(c *gin.Context) {
 func (a *Auth) GoogleCallback(c *gin.Context) {
 	cookie, _ := c.Cookie("oauth")
 	state, verifier, _ := strings.Cut(cookie, ".")
+
+	// state and verifier are used once, so clear the cookie before checking anything,
+	// even a failed attempt uses it up
+	http.SetCookie(c.Writer, &http.Cookie{Name: "oauth", Path: "/auth/google/callback", MaxAge: -1})
+
 	if state == "" || c.Query("state") != state {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-
-	// state and verifier are used once, so can immediately invalidate the cookie
-	http.SetCookie(c.Writer, &http.Cookie{Name: "oauth", Path: "/auth/google/callback", MaxAge: -1})
 
 	ctx := c.Request.Context()
 

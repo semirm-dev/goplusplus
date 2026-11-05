@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/h-operators/api/v1"
+	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/g-operators/api/v1"
 )
 
 // Domain-qualified, or the API server warns on every write.

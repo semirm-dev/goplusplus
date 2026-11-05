@@ -1,4 +1,4 @@
-module github.com/semirm-dev/goplusplus/examples/h-operators
+module github.com/semirm-dev/goplusplus/examples/g-operators
 
 go 1.26.0
 

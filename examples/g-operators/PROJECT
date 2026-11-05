@@ -7,7 +7,7 @@ domain: semirmahovkic.xyz
 layout:
 - go.kubebuilder.io/v4
 projectName: widget-operator
-repo: github.com/semirm-dev/goplusplus/examples/h-operators
+repo: github.com/semirm-dev/goplusplus/examples/g-operators
 resources:
 - api:
     crdVersion: v1
@@ -16,7 +16,7 @@ resources:
   domain: semirmahovkic.xyz
   group: goplusplus
   kind: Widget
-  path: github.com/semirm-dev/goplusplus/examples/h-operators/api/v1
+  path: github.com/semirm-dev/goplusplus/examples/g-operators/api/v1
   version: v1
 - controller: true
   core: true

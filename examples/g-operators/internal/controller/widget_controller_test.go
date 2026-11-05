@@ -28,7 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/h-operators/api/v1"
+	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/g-operators/api/v1"
 )
 
 // These run against envtest: a real kube-apiserver and etcd, and the manager

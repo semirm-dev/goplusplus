@@ -35,8 +35,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/h-operators/api/v1"
-	"github.com/semirm-dev/goplusplus/examples/h-operators/internal/controller"
+	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/g-operators/api/v1"
+	"github.com/semirm-dev/goplusplus/examples/g-operators/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 

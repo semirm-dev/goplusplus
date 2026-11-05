@@ -30,7 +30,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/semirm-dev/goplusplus/examples/h-operators/test/utils"
+	"github.com/semirm-dev/goplusplus/examples/g-operators/test/utils"
 )
 
 // namespace where the project is deployed in

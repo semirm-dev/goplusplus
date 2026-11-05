@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/h-operators/api/v1"
+	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/g-operators/api/v1"
 )
 
 // Every object a controller reads can already be out of date: in a manager,

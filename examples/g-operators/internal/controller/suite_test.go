@@ -37,7 +37,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/h-operators/api/v1"
+	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/g-operators/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 

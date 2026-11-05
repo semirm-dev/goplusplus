@@ -26,6 +26,7 @@ func (orderServer) WatchOrders(_ *orderv1.WatchOrdersRequest, stream grpc.Server
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
 
+	// simulate a stream of orders for clients to receive
 	for i := int32(1); ; i++ {
 		select {
 		case <-ctx.Done():
@@ -48,7 +49,9 @@ func (orderServer) WatchOrders(_ *orderv1.WatchOrdersRequest, stream grpc.Server
 
 func watchOrders(client orderv1.OrderServiceClient, n int) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel() // tells the server to stop sending
+	// tells the server to stop sending,
+	// remember the rule about cancelling the context from consumer to stop producer?
+	defer cancel()
 
 	stream, err := client.WatchOrders(ctx, &orderv1.WatchOrdersRequest{})
 	if err != nil {
@@ -56,6 +59,7 @@ func watchOrders(client orderv1.OrderServiceClient, n int) error {
 	}
 
 	for range n {
+		// receive an order from the server
 		resp, err := stream.Recv()
 		if errors.Is(err, io.EOF) { // the server ended the stream
 			return nil

@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #24 · Web servers: Test handlers without a server
+// 🌩 Go++ 🌩 #24 · Web servers: Testing handlers
 package main
 
 import (

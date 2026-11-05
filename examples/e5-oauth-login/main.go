@@ -31,7 +31,7 @@ func (a *Auth) GoogleLogin(c *gin.Context) {
 		MaxAge:   10 * 60,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode, // Strict is not sent on the redirect back from Google
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	c.Redirect(http.StatusFound, a.google.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier)))
@@ -45,28 +45,32 @@ func (a *Auth) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Server to server, the browser never sees Google's tokens.
-	tok, err := a.google.Exchange(c, c.Query("code"), oauth2.VerifierOption(verifier))
-	if err != nil {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-	rawID, _ := tok.Extra("id_token").(string)
-	id, err := a.idToken.Verify(c, rawID) // signature, iss, aud, exp
+	// state and verifier are used once, so can immediately invalidate the cookie
+	http.SetCookie(c.Writer, &http.Cookie{Name: "oauth", Path: "/auth/google/callback", MaxAge: -1})
+
+	ctx := c.Request.Context()
+
+	token, err := a.google.Exchange(ctx, c.Query("code"), oauth2.VerifierOption(verifier))
 	if err != nil {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	// find or create the user by id.Subject in database...
-	// Not: by email, it can change. sub never does.
+	rawID, _ := token.Extra("id_token").(string)
+	id, err := a.idToken.Verify(ctx, rawID) // signature, iss, aud, exp
+	if err != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	slog.Info("google login", "sub", id.Subject)
 
-	// From here on it's the normal login: save the session, set the refresh cookie (see #25)...
+	// TODO: find or create the user by id.Subject in database...
+	// Avoid email because it can change. sub never does.
 
-	// Not: redirect to "/#access_token=...", it ends up in browser history.
-	// The SPA calls /auth/refresh on load, same as after a page reload.
-	c.Redirect(http.StatusFound, "/")
+	// TODO: from e1-e2 -> a.issue(c, userID, rand.Text()), a new login starts a new family
+
+	c.Redirect(http.StatusFound, "https://app.example.com/")
 }
 
 func main() {
@@ -80,7 +84,7 @@ func main() {
 		google: &oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-			RedirectURL:  "https://example.com/auth/google/callback",
+			RedirectURL:  "https://api.example.com/auth/google/callback",
 			Endpoint:     provider.Endpoint(),
 			Scopes:       []string{oidc.ScopeOpenID},
 		},

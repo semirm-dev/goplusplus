@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package order.v1;
+
+option go_package = "github.com/semirm-dev/goplusplus/examples/f1-code-generation-with-buf/gen/order/v1;orderv1";
+
+service OrderService {
+  // Unary: one request, one response.
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+  // Server streaming: one request, many responses.
+  rpc WatchOrders(WatchOrdersRequest) returns (stream WatchOrdersResponse);
+  // Client streaming: many requests, one response.
+  rpc UploadItems(stream UploadItemsRequest) returns (UploadItemsResponse);
+  // Bidirectional streaming: both sides send whenever they want.
+  rpc Chat(stream ChatRequest) returns (stream ChatResponse);
+}
+
+message Order {
+  string id = 1;
+  string item = 2;
+  int32 quantity = 3;
+}
+
+message GetOrderRequest {
+  string id = 1;
+}
+
+message GetOrderResponse {
+  Order order = 1;
+}
+
+message WatchOrdersRequest {}
+
+message WatchOrdersResponse {
+  Order order = 1;
+}
+
+message UploadItemsRequest {
+  string item = 1;
+  int32 quantity = 2;
+}
+
+message UploadItemsResponse {
+  int32 count = 1;
+}
+
+message ChatRequest {
+  string text = 1;
+}
+
+message ChatResponse {
+  string text = 1;
+}

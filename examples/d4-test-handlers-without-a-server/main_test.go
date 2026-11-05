@@ -1,26 +1,51 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 )
 
-func TestHealth(t *testing.T) {
-	t.Parallel()
-	gin.SetMode(gin.TestMode)
+// Returns whatever error the test asks for.
+type fakeRepo struct{ err error }
 
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+func (f fakeRepo) Save(context.Context, Order) error {
+	return f.err
+}
 
-	newRouter().ServeHTTP(w, req) // a plain function call, no port
+func TestCreateOrder(t *testing.T) {
+	gin.SetMode(gin.TestMode) // no debug output
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	tests := []struct {
+		name    string
+		body    string
+		repoErr error
+		want    int
+	}{
+		{"created", `{"item":"book","quantity":2}`, nil, http.StatusCreated},
+		{"invalid", `{"item":"book","quantity":0}`, nil, http.StatusBadRequest},
+		{"conflict", `{"item":"book","quantity":2}`, ErrConflict, http.StatusConflict},
 	}
-	if got, want := w.Body.String(), `{"status":"ok"}`; got != want {
-		t.Fatalf("body = %s, want %s", got, want)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			svc := &OrderService{repo: fakeRepo{err: tt.repoErr}}
+			r := newRouter(svc)
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/orders",
+				strings.NewReader(tt.body))
+
+			r.ServeHTTP(w, req) // a plain function call, no port
+
+			if w.Code != tt.want {
+				t.Fatalf("status = %d, want %d", w.Code, tt.want)
+			}
+		})
 	}
 }

@@ -17,8 +17,8 @@ func IssueCSRF(c *gin.Context) {
 		Name:     "csrf",
 		Value:    token,
 		Path:     "/auth",
-		HttpOnly: true, // the SPA reads the body, not the cookie
-		Secure:   true,
+		HttpOnly: true,                 // the SPA reads the JSON response body, not the cookie
+		Secure:   true,                 // only send over HTTPS
 		SameSite: http.SameSiteLaxMode, // None if the API is on another site
 	})
 	c.JSON(http.StatusOK, gin.H{"csrf_token": token})
@@ -27,14 +27,12 @@ func IssueCSRF(c *gin.Context) {
 // Only for routes authenticated by a cookie. /api uses the Authorization header,
 // which the browser never attaches on its own.
 func RequireCSRF(c *gin.Context) {
-	// load from config. Not: allow a missing Origin, browsers always send it on POST.
 	if c.GetHeader("Origin") != "https://app.example.com" {
 		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 
-	// Another site can't read the token, so it can't put it in the header.
-	// Not: cookie == header, it leaks timing.
+	// Do not compare like regular strings, otherwise it fails timing attack => cookie == header
 	cookie, _ := c.Cookie("csrf")
 	header := c.GetHeader("X-CSRF-Token")
 	if header == "" || subtle.ConstantTimeCompare([]byte(cookie), []byte(header)) != 1 {

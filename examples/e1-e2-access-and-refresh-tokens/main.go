@@ -113,11 +113,11 @@ func setRefreshCookie(c *gin.Context, token string, maxAge int) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "refresh",
 		Value:    token,
-		Path:     "/auth", // sent to /auth/* only, never to /api
+		Path:     "/auth",
 		MaxAge:   maxAge,
-		HttpOnly: true, // JavaScript can't read it
-		Secure:   true, // only send over HTTPS
-		SameSite: http.SameSiteLaxMode,
+		HttpOnly: true,                 // JavaScript can't read it
+		Secure:   true,                 // only send over HTTPS
+		SameSite: http.SameSiteLaxMode, // None if the API is on another site
 	})
 }
 

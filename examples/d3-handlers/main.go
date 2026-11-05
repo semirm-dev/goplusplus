@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -112,14 +110,5 @@ func main() {
 
 	r.POST("/orders", h.Create)
 
-	for _, body := range []string{
-		`{"item":"book","quantity":2}`,
-		`{"item":"book","quantity":0}`, // fails gt=0, never reaches the service
-		`{"item":"pen","quantity":1}`,  // ErrConflict -> 409
-		`{"item":"lamp","quantity":1}`, // unknown error -> 500, the driver error stays in the log
-	} {
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/orders", strings.NewReader(body)))
-		fmt.Println(body, "->", w.Code, w.Body.String())
-	}
+	// Configure server and listen for requests...
 }

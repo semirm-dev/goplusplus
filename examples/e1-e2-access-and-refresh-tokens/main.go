@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #25, #26 · Auth: Access and refresh tokens, rotation
+// 🌩 Go++ 🌩 #25, #26, #28 · Auth: Access and refresh tokens, rotation, SameSite and CORS
 package main
 
 import (
@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/semirm-dev/jwt"
 )
@@ -139,6 +140,19 @@ func main() {
 
 	a := &Auth{signer: signer, verifier: verifier}
 	r := gin.New()
+
+	// CORS looks at the origin: app.example.com and api.example.com are two origins.
+	r.Use(cors.New(cors.Config{
+		// Exact origin: scheme + host + port.
+		AllowOrigins: []string{"https://app.example.com"},
+		AllowMethods: []string{"GET", "POST"},
+		// X-CSRF-Token if you use the CSRF token
+		AllowHeaders:     []string{"Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: true, // the SPA sends cookies with fetch(url, { credentials: 'include' })
+		// How long the browser caches the preflight.
+		// Chrome caps it at 2h anyway.
+		MaxAge: 2 * time.Hour,
+	}))
 
 	r.POST("/auth/login", a.Login)
 	r.POST("/auth/refresh", a.Refresh)

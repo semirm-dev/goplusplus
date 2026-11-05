@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Returns whatever error the test asks for.
 type fakeRepo struct{ err error }
 
 func (f fakeRepo) Save(context.Context, Order) error {
@@ -18,7 +17,7 @@ func (f fakeRepo) Save(context.Context, Order) error {
 }
 
 func TestCreateOrder(t *testing.T) {
-	gin.SetMode(gin.TestMode) // no debug output
+	gin.SetMode(gin.TestMode)
 
 	tests := []struct {
 		name    string
@@ -38,10 +37,9 @@ func TestCreateOrder(t *testing.T) {
 			svc := &OrderService{repo: fakeRepo{err: tt.repoErr}}
 			r := newRouter(svc)
 			w := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodPost, "/orders",
-				strings.NewReader(tt.body))
+			req := httptest.NewRequest(http.MethodPost, "/orders", strings.NewReader(tt.body))
 
-			r.ServeHTTP(w, req) // a plain function call, no port
+			r.ServeHTTP(w, req)
 
 			if w.Code != tt.want {
 				t.Fatalf("status = %d, want %d", w.Code, tt.want)

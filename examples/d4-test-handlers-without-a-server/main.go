@@ -9,19 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var ErrConflict = errors.New("already exists")
+
 type Order struct {
 	Item     string
 	Quantity int
 }
 
-var ErrConflict = errors.New("already exists")
+type OrderService struct {
+	repo OrderRepository
+}
 
 type OrderRepository interface {
 	Save(ctx context.Context, o Order) error
-}
-
-type OrderService struct {
-	repo OrderRepository
 }
 
 func (s *OrderService) Create(ctx context.Context, o Order) error {

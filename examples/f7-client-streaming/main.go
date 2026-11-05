@@ -28,6 +28,7 @@ func (orderServer) UploadItems(stream grpc.ClientStreamingServer[orderv1.UploadI
 	var count int32
 
 	for {
+		// receive an item from the client
 		req, err := stream.Recv()
 		if errors.Is(err, io.EOF) { // the client is done sending
 			return stream.SendAndClose(&orderv1.UploadItemsResponse{Count: count})

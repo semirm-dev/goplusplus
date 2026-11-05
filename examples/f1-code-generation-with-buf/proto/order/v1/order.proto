@@ -8,8 +8,10 @@ service OrderService {
   // Unary: one request, one response.
   rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
   // Server streaming: one request, many responses.
+  // Server 'returning' a stream = producer, client 'consuming' it.
   rpc WatchOrders(WatchOrdersRequest) returns (stream WatchOrdersResponse);
   // Client streaming: many requests, one response.
+  // Server 'accepting' a stream = consumer, client 'sending' it.
   rpc UploadItems(stream UploadItemsRequest) returns (UploadItemsResponse);
   // Bidirectional streaming: both sides send whenever they want.
   rpc Chat(stream ChatRequest) returns (stream ChatResponse);

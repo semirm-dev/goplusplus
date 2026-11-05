@@ -23,14 +23,17 @@ type orderServer struct {
 
 func (orderServer) Chat(stream grpc.BidiStreamingServer[orderv1.ChatRequest, orderv1.ChatResponse]) error {
 	for {
+		// receive a message from the client
 		req, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
+			// send a response to the client
 			return stream.Send(&orderv1.ChatResponse{Text: "bye"})
 		}
 		if err != nil {
 			return err
 		}
 
+		// send a response to the client
 		if err := stream.Send(&orderv1.ChatResponse{Text: strings.ToUpper(req.GetText())}); err != nil {
 			return err
 		}
@@ -50,8 +53,11 @@ func chat(client orderv1.OrderServiceClient, messages []string) error {
 		return err
 	}
 
+	// send messages to the server
+	// noticed again? producer started first in goroutine
 	go func() {
 		for _, text := range messages {
+			// send a message to the server
 			if err := stream.Send(&orderv1.ChatRequest{Text: text}); err != nil {
 				return
 			}
@@ -59,7 +65,10 @@ func chat(client orderv1.OrderServiceClient, messages []string) error {
 		stream.CloseSend()
 	}()
 
+	// receive responses from the server
+	// consumer started after producer
 	for {
+		// receive a response from the server
 		resp, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
 			return nil

@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #25, #26, #28 · Auth: Access and refresh tokens, rotation, SameSite and CORS
+// 🌩 Go++ 🌩 #25, #27 · Auth: Access and refresh tokens, SameSite and CORS
 package main
 
 import (

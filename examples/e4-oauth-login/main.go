@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #29 · Auth: OAuth login
+// 🌩 Go++ 🌩 #28 · Auth: OAuth login
 package main
 
 import (
@@ -70,7 +70,7 @@ func (a *Auth) GoogleCallback(c *gin.Context) {
 	// TODO: find or create the user by id.Subject in database...
 	// Avoid email because it can change. sub never does.
 
-	// TODO: from e1-e2 -> a.issue(c, userID, rand.Text()), a new login starts a new family
+	// TODO: from e1 -> a.issue(c, userID, rand.Text()), a new login starts a new family
 
 	c.Redirect(http.StatusFound, "https://app.example.com/")
 }

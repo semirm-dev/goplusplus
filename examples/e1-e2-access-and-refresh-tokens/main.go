@@ -116,7 +116,7 @@ func setRefreshCookie(c *gin.Context, token string, maxAge int) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "refresh",
 		Value:    token,
-		Path:     "/auth",
+		Path:     "/auth", // so we can use it in /logout too
 		MaxAge:   maxAge,
 		HttpOnly: true,                 // JavaScript can't read it
 		Secure:   true,                 // only send over HTTPS

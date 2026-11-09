@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #25, #27 · Auth: Access and refresh tokens, SameSite and CORS
+// 🌩 Go++ 🌩 #25 · Auth: Access and refresh tokens
 package main
 
 import (

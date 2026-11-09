@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #35 · gRPC: gRPC server
+// 🌩 Go++ 🌩 #29 · gRPC: gRPC server
 package main
 
 import (

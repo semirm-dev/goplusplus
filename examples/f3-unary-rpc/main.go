@@ -1,9 +1,8 @@
-// 🌩 Go++ 🌩 #37 · gRPC: Unary RPC
+// 🌩 Go++ 🌩 #30 · gRPC: Unary RPC
 package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -16,77 +15,52 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// store.go
-// knows nothing about gRPC
-
-var ErrNotFound = errors.New("not found")
-
-type Order struct {
-	ID       string
-	Item     string
-	Quantity int32
-}
-
-type Store struct {
-	orders map[string]Order
-}
-
-func (s *Store) Find(ctx context.Context, id string) (Order, error) {
-	select {
-	case <-time.After(50 * time.Millisecond): // simulate database call
-	case <-ctx.Done():
-		return Order{}, ctx.Err()
-	}
-
-	o, ok := s.orders[id]
-	if !ok {
-		return Order{}, fmt.Errorf("order %s: %w", id, ErrNotFound)
-	}
-	return o, nil
-}
-
-// end
-
 // server.go
 
 type orderServer struct {
 	orderv1.UnimplementedOrderServiceServer
-	store *Store
+	orders map[string]*orderv1.Order
 }
 
 func (s *orderServer) GetOrder(ctx context.Context, req *orderv1.GetOrderRequest) (*orderv1.GetOrderResponse, error) {
 	if req.GetId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
 	}
+
+	// the client's deadline came with the call
 	if d, ok := ctx.Deadline(); ok {
-		fmt.Printf("  server: deadline in %v\n", time.Until(d).Round(time.Millisecond))
+		fmt.Println("  server: deadline in", time.Until(d).Round(time.Millisecond))
 	}
 
-	o, err := s.store.Find(ctx, req.GetId())
-	switch {
-	case errors.Is(err, ErrNotFound):
-		return nil, status.Errorf(codes.NotFound, "order %s not found", req.GetId())
-	case ctx.Err() != nil:
+	// get from database... pass ctx, so a cancelled call stops the query too
+	select {
+	case <-time.After(50 * time.Millisecond):
+		fmt.Println("simulate work...database call...")
+	case <-ctx.Done():
 		return nil, status.FromContextError(ctx.Err()).Err()
-	case err != nil:
-		log.Printf("get order %s: %v", req.GetId(), err)
-		return nil, status.Error(codes.Internal, "internal error") // don't leak internals to the client
 	}
 
-	return &orderv1.GetOrderResponse{Order: &orderv1.Order{Id: o.ID, Item: o.Item, Quantity: o.Quantity}}, nil
+	o, ok := s.orders[req.GetId()]
+	if !ok {
+		// Not: errors.New("not found"), the client gets codes.Unknown
+		return nil, status.Errorf(codes.NotFound, "order %s not found", req.GetId())
+	}
+
+	return &orderv1.GetOrderResponse{Order: o}, nil
 }
 
 // end
 
 // client.go
-// use the client to call the server
 
 func getOrder(client orderv1.OrderServiceClient, id string, timeout time.Duration) {
+	// always set a deadline, without one a call can wait forever
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	resp, err := client.GetOrder(ctx, &orderv1.GetOrderRequest{Id: id})
 
+	// check the code, not the error message
 	switch status.Code(err) {
 	case codes.OK:
 		fmt.Printf("%q: %s x%d\n", id, resp.GetOrder().GetItem(), resp.GetOrder().GetQuantity())
@@ -110,9 +84,9 @@ func main() {
 	srv := grpc.NewServer()
 	defer srv.GracefulStop()
 
-	store := &Store{orders: map[string]Order{"1": {ID: "1", Item: "pen", Quantity: 2}}}
-
-	orderv1.RegisterOrderServiceServer(srv, &orderServer{store: store})
+	orderv1.RegisterOrderServiceServer(srv, &orderServer{
+		orders: map[string]*orderv1.Order{"1": {Id: "1", Item: "pen", Quantity: 2}},
+	})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {

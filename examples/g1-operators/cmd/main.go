@@ -11,7 +11,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	goplusplusv1 "github.com/semirm-dev/goplusplus/examples/g1-operators/api/v1"
-	"github.com/semirm-dev/goplusplus/examples/g1-operators/internal/podzone"
 	"github.com/semirm-dev/goplusplus/examples/g1-operators/internal/widget"
 )
 
@@ -29,11 +28,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// The only place the features meet.
 	if err := (&widget.Reconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}).SetupWithManager(mgr); err != nil {
-		log.Fatal(err)
-	}
-	if err := (&podzone.Reconciler{Client: mgr.GetClient()}).SetupWithManager(mgr); err != nil {
 		log.Fatal(err)
 	}
 

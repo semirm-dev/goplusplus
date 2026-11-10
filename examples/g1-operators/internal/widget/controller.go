@@ -41,7 +41,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 // SetupWithManager registers the controller and what it watches.
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&goplusplusv1.Widget{}).
+		For(&goplusplusv1.Widget{}). // same for builtin resources like Pod, Node, etc.
 		Owns(&corev1.ConfigMap{}).
 		Named("widget").
 		Complete(r)

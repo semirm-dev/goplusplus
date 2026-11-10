@@ -1,20 +1,5 @@
-/*
-Copyright 2026.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package controller
+// 🌩 Go++ 🌩 #32 · Kubernetes Operators
+package podzone
 
 import (
 	"context"
@@ -25,10 +10,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// PodReconciler is a controller with no custom resource: it copies the zone of
+// Reconciler is a controller with no custom resource: it copies the zone of
 // the node each Pod landed on onto the Pod's labels. The desired state lives
 // on objects Kubernetes already has, so there is no CRD to install.
-type PodReconciler struct {
+type Reconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
@@ -36,11 +21,12 @@ type PodReconciler struct {
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;patch
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch
 
-func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var pod corev1.Pod
 	if err := r.Get(ctx, req.NamespacedName, &pod); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
 	if pod.Spec.NodeName == "" {
 		return ctrl.Result{}, nil // not scheduled yet: the update that binds it brings us back
 	}
@@ -49,24 +35,27 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	if err := r.Get(ctx, client.ObjectKey{Name: pod.Spec.NodeName}, &node); err != nil {
 		return ctrl.Result{}, err
 	}
+
 	zone := node.Labels[corev1.LabelTopologyZone]
 	if zone == "" || pod.Labels[corev1.LabelTopologyZone] == zone {
 		return ctrl.Result{}, nil
 	}
 
 	// A merge patch merges maps, so this touches one label and no others.
+	// Not: r.Update. It sends the whole Pod, and the kubelet writes it too.
 	patch := client.MergeFrom(pod.DeepCopy())
 	if pod.Labels == nil {
 		pod.Labels = map[string]string{}
 	}
 	pod.Labels[corev1.LabelTopologyZone] = zone
+
 	return ctrl.Result{}, r.Patch(ctx, &pod, patch)
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *PodReconciler) SetupWithManager(mgr ctrl.Manager) error {
+// SetupWithManager registers the controller and what it watches.
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Pod{}).
-		Named("pod").
+		Named("podzone").
 		Complete(r)
 }

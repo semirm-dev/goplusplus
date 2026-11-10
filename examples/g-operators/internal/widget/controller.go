@@ -1,20 +1,5 @@
-/*
-Copyright 2026.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package controller
+// 🌩 Go++ 🌩 #33-#35 · Kubernetes Operators: Reconcile loop, Spec and status, Cleanup
+package widget
 
 import (
 	"context"
@@ -37,9 +22,9 @@ import (
 // Domain-qualified, or the API server warns on every write.
 const shieldFinalizer = "goplusplus.semirmahovkic.xyz/shield-protection"
 
-// WidgetReconciler merges a Widget's fragments into a ConfigMap it owns, and
-// keeps the Widget protected by Shield for as long as the Widget exists.
-type WidgetReconciler struct {
+// Reconciler merges a Widget's fragments into a ConfigMap it owns, and keeps
+// the Widget protected by Shield for as long as the Widget exists.
+type Reconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	Shield Shield
@@ -52,12 +37,13 @@ type WidgetReconciler struct {
 
 // Reconcile gets a key, not an event: it reads the Widget fresh and converges,
 // so running it once or fifty times lands in the same place.
-func (r *WidgetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
 	var w goplusplusv1.Widget
 	if err := r.Get(ctx, req.NamespacedName, &w); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err) // gone: nothing left to converge
+		// Not: return err. A deleted Widget would be retried forever.
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// Being deleted: clean up outside the cluster, then let go.
@@ -76,7 +62,8 @@ func (r *WidgetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// protection if the Widget is deleted between the two.
 	if controllerutil.AddFinalizer(&w, shieldFinalizer) {
 		if err := r.Update(ctx, &w); err != nil {
-			return ctrl.Result{}, err // a conflict too: requeued, read fresh
+			// A 409 too. Not: retry here. The requeue reads it fresh.
+			return ctrl.Result{}, err
 		}
 	}
 	if err := r.Shield.Protect(ctx, req.String()); err != nil {
@@ -103,6 +90,7 @@ func (r *WidgetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		ObservedGeneration: w.Generation,
 	})
 	w.Status.ObservedGeneration = w.Generation
+	// Not: r.Update. With the status subresource on, it drops status.
 	if err := r.Status().Update(ctx, &w); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -112,8 +100,8 @@ func (r *WidgetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	return ctrl.Result{RequeueAfter: 10 * time.Minute}, nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *WidgetReconciler) SetupWithManager(mgr ctrl.Manager) error {
+// SetupWithManager registers the controller and what it watches.
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&goplusplusv1.Widget{}).
 		Owns(&corev1.ConfigMap{}). // someone edits the ConfigMap -> reconcile its Widget

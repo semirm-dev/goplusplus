@@ -24,7 +24,7 @@ type orderServer struct {
 
 // When you're done sending, close your pipe. When you receive, read until io.EOF.
 // Client closing: CloseSend(), or CloseAndRecv() in client streaming (many -> one reply)
-// Server closing: return from the handler, or SendAndClose() in client streaming (many -> one reply)
+// Server closing: return from the RPC method, or SendAndClose() in client streaming (many -> one reply)
 
 // ## 1. server streaming: one request, many responses
 

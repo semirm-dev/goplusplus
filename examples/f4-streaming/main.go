@@ -22,6 +22,10 @@ type orderServer struct {
 	orderv1.UnimplementedOrderServiceServer
 }
 
+// Rule of thumb: check for io.EOF first, in the following cases:
+// - on every stream.Recv(), both in server and client
+// - on every stream.Send() from a client
+
 // ## 1. server streaming: one request, many responses
 
 // server.go
@@ -106,10 +110,14 @@ func uploadItems(client orderv1.OrderServiceClient, items []*orderv1.UploadItems
 	}
 
 	for _, item := range items {
-		// io.EOF: the server already ended the stream, the real error comes from CloseAndRecv
 		// send to the server
-		if err := stream.Send(item); errors.Is(err, io.EOF) {
+
+		err := stream.Send(item)
+		if errors.Is(err, io.EOF) { // the server ended the stream, the real error comes from CloseAndRecv
 			break
+		}
+		if err != nil { // the client's own error (ex: deadline), returned directly
+			return 0, err
 		}
 	}
 
@@ -130,7 +138,7 @@ func (orderServer) Chat(stream grpc.BidiStreamingServer[orderv1.ChatRequest, ord
 	for {
 		// receive from the client
 		req, err := stream.Recv()
-		if errors.Is(err, io.EOF) { // the client is done sending, we can still send
+		if errors.Is(err, io.EOF) { // the client is done sending
 			return stream.Send(&orderv1.ChatResponse{Text: "bye"})
 		}
 		if err != nil {
@@ -165,7 +173,7 @@ func chat(client orderv1.OrderServiceClient, messages []string) error {
 				return
 			}
 		}
-		stream.CloseSend() // from the same goroutine that sends
+		stream.CloseSend()
 	}()
 
 	// consumer started after producer's goroutine

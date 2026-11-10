@@ -1,0 +1,6 @@
+namespace: widget-operator-system
+namePrefix: widget-operator-
+resources:
+  - ../crd
+  - ../rbac
+  - ../manager

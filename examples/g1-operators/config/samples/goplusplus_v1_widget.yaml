@@ -1,0 +1,8 @@
+apiVersion: goplusplus.semirmahovkic.xyz/v1
+kind: Widget
+metadata:
+  name: widget-sample
+spec:
+  fragments:
+    - "vpn: on"
+    - "firewall: strict"

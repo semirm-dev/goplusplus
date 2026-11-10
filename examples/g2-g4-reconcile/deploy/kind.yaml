@@ -1,0 +1,9 @@
+# A control plane and one worker. The worker has a zone label, so the podzone
+# controller has something to copy onto the Pods scheduled there.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+  - role: worker
+    labels:
+      topology.kubernetes.io/zone: zone-a

@@ -22,9 +22,9 @@ type orderServer struct {
 	orderv1.UnimplementedOrderServiceServer
 }
 
-// Rule of thumb: check for io.EOF first, in the following cases:
-// - on every stream.Recv(), both in server and client
-// - on every stream.Send() from a client
+// When you're done sending, close your pipe. When you receive, read until io.EOF.
+// Client closing: CloseSend(), or CloseAndRecv() in client streaming (many -> one reply)
+// Server closing: return from the handler, or SendAndClose() in client streaming (many -> one reply)
 
 // ## 1. server streaming: one request, many responses
 

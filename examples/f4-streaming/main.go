@@ -25,8 +25,8 @@ type orderServer struct {
 // When you're done sending, close your pipe. When you receive, read until io.EOF.
 // Client closing: CloseSend(), or CloseAndRecv() in client streaming (many -> one reply)
 // Server closing: return from the RPC method, or SendAndClose() in client streaming (many -> one reply)
-// Any reading in a loop should check for io.EOF first.
-// The real error/result always comes from receiving side, Recv() or CloseAndRecv()
+// Any reading in a loop should check for io.EOF first. This means the other side is done sending.
+// The real error/result always comes from the receiving side, Recv() or CloseAndRecv()
 
 // ## 1. server streaming: one request, many responses
 

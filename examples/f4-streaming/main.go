@@ -212,10 +212,18 @@ func main() {
 
 	client := orderv1.NewOrderServiceClient(conn)
 
+	serverStreaming(client)
+	clientStreaming(client)
+	bidiStreaming(client)
+}
+
+func serverStreaming(client orderv1.OrderServiceClient) {
 	if err := watchOrders(client); err != nil {
 		log.Fatal(err)
 	}
+}
 
+func clientStreaming(client orderv1.OrderServiceClient) {
 	uploads := [][]*orderv1.UploadItemsRequest{
 		{{Item: "pen", Quantity: 2}, {Item: "book", Quantity: 1}},
 		{{Item: "pen", Quantity: 2}, {Item: "book", Quantity: 0}},
@@ -228,7 +236,9 @@ func main() {
 		}
 		fmt.Println("upload:", count, "items")
 	}
+}
 
+func bidiStreaming(client orderv1.OrderServiceClient) {
 	if err := chat(client, []string{"hello", "how are you"}); err != nil {
 		log.Fatal(err)
 	}

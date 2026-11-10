@@ -22,7 +22,9 @@ type orderServer struct {
 	orderv1.UnimplementedOrderServiceServer
 }
 
-// server streaming: one request, many responses
+// ## 1. server streaming: one request, many responses
+
+// server.go
 
 func (orderServer) WatchOrders(_ *orderv1.WatchOrdersRequest, stream grpc.ServerStreamingServer[orderv1.WatchOrdersResponse]) error {
 	ticker := time.NewTicker(50 * time.Millisecond)
@@ -36,11 +38,14 @@ func (orderServer) WatchOrders(_ *orderv1.WatchOrdersRequest, stream grpc.Server
 		}
 
 		order := &orderv1.Order{Id: fmt.Sprint(i), Item: "pen", Quantity: i}
+		// send to the client
 		if err := stream.Send(&orderv1.WatchOrdersResponse{Order: order}); err != nil {
 			return err
 		}
 	}
 }
+
+// client.go
 
 func watchOrders(client orderv1.OrderServiceClient) error {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -51,6 +56,7 @@ func watchOrders(client orderv1.OrderServiceClient) error {
 		return err
 	}
 
+	// read from server
 	for range 3 {
 		resp, err := stream.Recv()
 		if errors.Is(err, io.EOF) { // the server ended the stream
@@ -64,13 +70,16 @@ func watchOrders(client orderv1.OrderServiceClient) error {
 	return nil
 }
 
-// end
+// ## end
 
-// client streaming: many requests, one response
+// ## 2. client streaming: many requests, one response
+
+// server.go
 
 func (orderServer) UploadItems(stream grpc.ClientStreamingServer[orderv1.UploadItemsRequest, orderv1.UploadItemsResponse]) error {
 	var count int32
 	for {
+		// receive from the client
 		req, err := stream.Recv()
 		if errors.Is(err, io.EOF) { // the client is done sending
 			return stream.SendAndClose(&orderv1.UploadItemsResponse{Count: count})
@@ -85,6 +94,8 @@ func (orderServer) UploadItems(stream grpc.ClientStreamingServer[orderv1.UploadI
 	}
 }
 
+// client.go
+
 func uploadItems(client orderv1.OrderServiceClient, items []*orderv1.UploadItemsRequest) (int32, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -96,6 +107,7 @@ func uploadItems(client orderv1.OrderServiceClient, items []*orderv1.UploadItems
 
 	for _, item := range items {
 		// io.EOF: the server already ended the stream, the real error comes from CloseAndRecv
+		// send to the server
 		if err := stream.Send(item); errors.Is(err, io.EOF) {
 			break
 		}
@@ -108,12 +120,15 @@ func uploadItems(client orderv1.OrderServiceClient, items []*orderv1.UploadItems
 	return resp.GetCount(), nil
 }
 
-// end
+// ## end
 
-// bidirectional streaming: both sides send whenever they want
+// ## 3. bidirectional streaming: both sides send whenever they want
+
+// server.go
 
 func (orderServer) Chat(stream grpc.BidiStreamingServer[orderv1.ChatRequest, orderv1.ChatResponse]) error {
 	for {
+		// receive from the client
 		req, err := stream.Recv()
 		if errors.Is(err, io.EOF) { // the client is done sending, we can still send
 			return stream.Send(&orderv1.ChatResponse{Text: "bye"})
@@ -121,11 +136,15 @@ func (orderServer) Chat(stream grpc.BidiStreamingServer[orderv1.ChatRequest, ord
 		if err != nil {
 			return err
 		}
+
+		// send to the client
 		if err := stream.Send(&orderv1.ChatResponse{Text: strings.ToUpper(req.GetText())}); err != nil {
 			return err
 		}
 	}
 }
+
+// client.go
 
 func chat(client orderv1.OrderServiceClient, messages []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -141,7 +160,7 @@ func chat(client orderv1.OrderServiceClient, messages []string) error {
 	// Not: two goroutines calling Send on the same stream
 	go func() {
 		for _, text := range messages {
-			// send message to the server
+			// send to server
 			if err := stream.Send(&orderv1.ChatRequest{Text: text}); err != nil {
 				return
 			}
@@ -151,7 +170,7 @@ func chat(client orderv1.OrderServiceClient, messages []string) error {
 
 	// consumer started after producer's goroutine
 	for {
-		// receive message from the server
+		// receive from server
 		resp, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
 			return nil
@@ -163,7 +182,7 @@ func chat(client orderv1.OrderServiceClient, messages []string) error {
 	}
 }
 
-// end
+// ## end
 
 // main.go
 

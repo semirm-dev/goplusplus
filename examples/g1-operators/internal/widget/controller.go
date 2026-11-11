@@ -26,15 +26,23 @@ type Reconciler struct {
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var w goplusplusv1.Widget
+
+	// get current CR state (widget)
 	if err := r.Get(ctx, req.NamespacedName, &w); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// write your logic
 	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: w.Name, Namespace: w.Namespace}}
+
+	// create if missing, or update if changed, whatever your needs are
 	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, cm, func() error {
 		cm.Data = map[string]string{"config": strings.Join(w.Spec.Fragments, "\n")}
 		return controllerutil.SetControllerReference(&w, cm, r.Scheme)
 	})
+
+	// TODO: handle the error properly
+
 	return ctrl.Result{}, err
 }
 

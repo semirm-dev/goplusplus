@@ -18,10 +18,4 @@ resources:
   kind: Widget
   path: github.com/semirm-dev/goplusplus/examples/g1-operators/api/v1
   version: v1
-- controller: true
-  core: true
-  group: core
-  kind: Pod
-  path: k8s.io/api/core/v1
-  version: v1
 version: "3"

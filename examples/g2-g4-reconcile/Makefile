@@ -110,6 +110,8 @@ undeploy: ## Undeploy controller. Call with ignore-not-found=true to ignore miss
 
 ##@ Local cluster (kind)
 
+# TODO: docker/kind/deploy targets aren't needed for the posts, `make install run` is enough. remove?
+
 KIND_LOCAL ?= widget-operator
 KIND_IMG ?= widget-operator:dev
 

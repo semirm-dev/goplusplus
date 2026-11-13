@@ -34,38 +34,45 @@ type Reconciler struct {
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update
 
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// G2: req is only namespace/name, no event. Read the current state.
 	var w goplusplusv1.Widget
+
+	// get current CR state (widget), req has only namespace/name, no event
 	if err := r.Get(ctx, req.NamespacedName, &w); err != nil {
-		// Not: return err, a deleted Widget would be retried forever.
+		// not found = already deleted, nothing to do (returning err would retry it forever)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
 	name := req.String()
 
-	// G4: being deleted. Clean up outside first, then remove the finalizer.
+	// G4: the widget is being deleted
 	if !w.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(&w, fin) {
 			return ctrl.Result{}, nil
 		}
+
 		if err := r.Shield.Unprotect(ctx, name); err != nil {
 			return ctrl.Result{}, err // stays Terminating until this works
 		}
+
 		controllerutil.RemoveFinalizer(&w, fin)
+
 		return ctrl.Result{}, r.Update(ctx, &w)
 	}
 
 	// G4: finalizer first, then the external resource.
 	if controllerutil.AddFinalizer(&w, fin) {
 		if err := r.Update(ctx, &w); err != nil {
-			return ctrl.Result{}, err // a 409 too: the requeue reads it fresh
+			return ctrl.Result{}, err // 409 conflict, stale object, next run reads it fresh
 		}
 	}
+
 	if err := r.Shield.Protect(ctx, name); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	// G4: the owner reference. Delete the Widget and Kubernetes deletes the ConfigMap.
 	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: w.Name, Namespace: w.Namespace}}
+
 	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, cm, func() error {
 		cm.Data = map[string]string{"config": strings.Join(w.Spec.Fragments, "\n")}
 		return controllerutil.SetControllerReference(&w, cm, r.Scheme)
@@ -82,13 +89,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		Message:            fmt.Sprintf("%d fragments merged", len(w.Spec.Fragments)),
 		ObservedGeneration: w.Generation,
 	})
+
 	w.Status.ObservedGeneration = w.Generation
-	// Not: r.Update, with the status subresource on it drops status.
+
 	if err := r.Status().Update(ctx, &w); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// G2: nothing watches AWS for us, so look again later.
+	// example use case to automatically reconcile again after 10 minutes
+	// because nothing watches AWS objects, we need to check again later
 	return ctrl.Result{RequeueAfter: 10 * time.Minute}, nil
 }
 

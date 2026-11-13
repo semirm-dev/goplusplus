@@ -17,21 +17,24 @@ import (
 func main() {
 	ctrl.SetLogger(zap.New())
 
-	// The scheme tells the client which Go type is which kind: the built-in ones and our Widget.
+	// register the schemes, the types the manager can watch and handle
 	scheme := runtime.NewScheme()
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(goplusplusv1.AddToScheme(scheme))
 
+	// create a new manager (it runs the controllers)
 	// TODO: metrics, health probes and leader election before running it in production.
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{Scheme: scheme})
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// register the controller
 	if err := (&widget.Reconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}).SetupWithManager(mgr); err != nil {
 		log.Fatal(err)
 	}
 
+	// start the manager
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		log.Fatal(err)
 	}

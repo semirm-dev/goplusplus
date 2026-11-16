@@ -1,0 +1,28 @@
+driver:
+  kind: modern_ebpf
+tty: true
+falco:
+  json_output: true
+falcosidekick:
+  enabled: true
+  config:
+    # Secret from ESO (slack-webhook.yaml), key SLACK_WEBHOOKURL
+    existingSecret: falcosidekick-slack
+    slack:
+      # Alert-only: Slack, no PagerDuty until the noise is tuned
+      minimumpriority: warning
+customRules:
+  api-rules.yaml: |-
+    - rule: Shell or token read in api
+      desc: >
+        api is distroless and never calls the Kubernetes API,
+        so a shell or a service account token read means someone is inside.
+      condition: >
+        container and k8s.ns.name = "api" and
+        ((spawned_process and proc.name in (shell_binaries)) or
+         (open_read and fd.name startswith /var/run/secrets/kubernetes.io/serviceaccount))
+      output: >
+        Unexpected activity in api (proc=%proc.cmdline parent=%proc.pname
+        file=%fd.name pod=%k8s.pod.name image=%container.image.repository)
+      priority: WARNING
+      tags: [api, mitre_execution, mitre_credential_access]

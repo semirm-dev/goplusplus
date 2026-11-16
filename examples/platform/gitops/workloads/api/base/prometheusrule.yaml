@@ -1,0 +1,41 @@
+# SLO: 99.9% of requests are not 5xx over 30 days -> error budget 0.001
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: api-slo
+  namespace: api
+spec:
+  groups:
+    - name: api-slo.rules
+      rules:
+        - record: api:http_errors:ratio_rate5m
+          expr: sum(rate(http_requests_total{job="api",code=~"5.."}[5m])) / sum(rate(http_requests_total{job="api"}[5m]))
+        - record: api:http_errors:ratio_rate30m
+          expr: sum(rate(http_requests_total{job="api",code=~"5.."}[30m])) / sum(rate(http_requests_total{job="api"}[30m]))
+        - record: api:http_errors:ratio_rate1h
+          expr: sum(rate(http_requests_total{job="api",code=~"5.."}[1h])) / sum(rate(http_requests_total{job="api"}[1h]))
+        - record: api:http_errors:ratio_rate6h
+          expr: sum(rate(http_requests_total{job="api",code=~"5.."}[6h])) / sum(rate(http_requests_total{job="api"}[6h]))
+    - name: api-slo.alerts
+      rules:
+        - alert: APIErrorBudgetBurn
+          # fast burn: 2% of the 30-day budget in 1h; slow burn: 5% in 6h.
+          # the short window makes the alert resolve soon after the errors stop.
+          expr: |
+            (
+              api:http_errors:ratio_rate1h > (14.4 * 0.001)
+              and
+              api:http_errors:ratio_rate5m > (14.4 * 0.001)
+            )
+            or
+            (
+              api:http_errors:ratio_rate6h > (6 * 0.001)
+              and
+              api:http_errors:ratio_rate30m > (6 * 0.001)
+            )
+          for: 2m
+          labels:
+            severity: page
+          annotations:
+            summary: api is burning its 99.9% availability error budget
+            description: 5xx ratio is above the burn-rate threshold on both the long and the short window.

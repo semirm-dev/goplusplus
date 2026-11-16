@@ -1,0 +1,31 @@
+provider:
+  name: cloudflare
+
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token   # ESO, from OpenBao
+        key: api-token
+
+sources:
+  - gateway-httproute
+
+domainFilters:
+  - example.com
+
+policy: upsert-only        # sync only after the first plan looks right
+registry: txt
+txtOwnerId: platform-gke   # unique per cluster, never reused
+interval: 1m
+
+serviceAccount:
+  create: true
+  name: external-dns
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi

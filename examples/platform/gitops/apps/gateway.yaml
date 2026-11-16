@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: gateway
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchExpressions:
+            - { key: env, operator: In, values: [kind, gke] }
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  template:
+    metadata:
+      name: "gateway-{{.metadata.labels.env}}"
+    spec:
+      project: platform
+      sources:
+        - repoURL: https://github.com/semirm-dev/platform-gitops.git
+          targetRevision: main
+          path: platform/gateway
+        # the Gateway differs per cluster only in its gatewayClassName
+        - repoURL: https://github.com/semirm-dev/platform-gitops.git
+          targetRevision: main
+          path: "clusters/{{.metadata.labels.env}}"
+          directory:
+            include: gateway.yaml
+      destination:
+        server: "{{.server}}"
+        namespace: gateway
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        syncOptions: [CreateNamespace=true]

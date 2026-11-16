@@ -1,0 +1,9 @@
+# Inside the kind Docker network (docker network inspect kind), above the node IPs.
+apiVersion: cilium.io/v2alpha1
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: kind-pool
+spec:
+  blocks:
+    - start: "172.18.255.200"
+      stop: "172.18.255.250"

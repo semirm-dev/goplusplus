@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: api
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: The api workload
+  sourceRepos:
+    - https://github.com/semirm-dev/platform-gitops.git
+  destinations:
+    - { server: https://kubernetes.default.svc, namespace: api }
+  clusterResourceWhitelist:
+    - { group: "", kind: Namespace }

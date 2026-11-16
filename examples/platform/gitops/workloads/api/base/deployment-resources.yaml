@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: api
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          resources:
+            requests:
+              cpu: 100m        # HPA utilization is measured against this
+              memory: 64Mi
+            limits:
+              memory: 128Mi    # no CPU limit: throttling hurts latency

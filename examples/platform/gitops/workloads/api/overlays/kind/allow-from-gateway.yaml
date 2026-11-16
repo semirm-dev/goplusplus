@@ -1,0 +1,16 @@
+# Cilium's Envoy is not a pod: its traffic carries the reserved "ingress" identity.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-from-gateway
+  namespace: api
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }

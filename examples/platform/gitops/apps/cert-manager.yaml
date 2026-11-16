@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cert-manager
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchExpressions:
+            - { key: env, operator: In, values: [kind, gke] }
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  template:
+    metadata:
+      name: "cert-manager-{{.metadata.labels.env}}"
+    spec:
+      project: platform
+      sources:
+        - repoURL: https://charts.jetstack.io
+          chart: cert-manager
+          targetRevision: v1.18.2
+          helm:
+            valueFiles:
+              - "$values/clusters/{{.metadata.labels.env}}/cert-manager.yaml"
+        - repoURL: https://github.com/semirm-dev/platform-gitops.git
+          targetRevision: main
+          ref: values
+      destination:
+        server: "{{.server}}"
+        namespace: cert-manager
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        syncOptions: [CreateNamespace=true, ServerSideApply=true]

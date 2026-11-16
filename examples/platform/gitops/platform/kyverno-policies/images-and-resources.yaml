@@ -1,0 +1,47 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: images-and-resources
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  background: true
+  rules:
+    - name: disallow-latest-tag
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces: [kube-system, kube-public, kube-node-lease, kyverno, falco, trivy-system, "gke-*", "gmp-*"]
+      validate:
+        failureAction: Audit
+        message: "Use a digest or an immutable tag. No tag means :latest."
+        pattern:
+          spec:
+            containers:
+              - image: "*:* & !*:latest"
+    - name: require-requests-and-memory-limit
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces: [kube-system, kube-public, kube-node-lease, kyverno, falco, trivy-system, "gke-*", "gmp-*"]
+      validate:
+        failureAction: Audit
+        message: "Set CPU and memory requests, and a memory limit."
+        pattern:
+          spec:
+            containers:
+              # No CPU limit on purpose: it throttles, a memory limit protects the node
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    memory: "?*"

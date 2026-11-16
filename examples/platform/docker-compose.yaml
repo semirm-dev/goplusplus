@@ -1,0 +1,19 @@
+services:
+  floci-gcp:
+    image: floci/floci-gcp:0.12.0
+    container_name: floci-gcp
+    ports:
+      - "4588:4588"
+    volumes:
+      # floci starts a k3s container per GKE cluster through the host Docker
+      - /var/run/docker.sock:/var/run/docker.sock
+      - floci-gcp-data:/app/data
+    environment:
+      - FLOCI_GCP_STORAGE_MODE=hybrid
+      - FLOCI_GCP_DEFAULT_PROJECT_ID=floci-local
+      - FLOCI_GCP_HOSTNAME=floci-gcp
+      - FLOCI_GCP_BASE_URL=http://floci-gcp:4588
+    restart: unless-stopped
+
+volumes:
+  floci-gcp-data:

@@ -1,0 +1,47 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-api-images
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: signed-by-api-ci
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [api]
+      verifyImages:
+        - imageReferences:
+            - "europe-west3-docker.pkg.dev/*/apps/*"
+          # Audit until every running image verifies, then Enforce
+          failureAction: Audit
+          mutateDigest: true
+          verifyDigest: true
+          required: true
+          imageRegistryCredentials:
+            providers: [google]
+          attestors:
+            - entries:
+                - keyless:
+                    issuer: "https://token.actions.githubusercontent.com"
+                    subjectRegExp: '^https://github\.com/semirm-dev/api/.+@refs/heads/main$'
+                    rekor:
+                      url: https://rekor.sigstore.dev
+          attestations:
+            # Pushed by `cosign attest --type cyclonedx`
+            - type: https://cyclonedx.org/bom
+              attestors:
+                - entries:
+                    - keyless:
+                        issuer: "https://token.actions.githubusercontent.com"
+                        subjectRegExp: '^https://github\.com/semirm-dev/api/.+@refs/heads/main$'
+                        rekor:
+                          url: https://rekor.sigstore.dev
+              conditions:
+                - all:
+                    - key: "{{ bomFormat }}"
+                      operator: Equals
+                      value: CycloneDX

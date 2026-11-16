@@ -1,0 +1,18 @@
+excludeNamespaces: "kube-system,trivy-system"
+trivy:
+  ignoreUnfixed: true
+  severity: CRITICAL,HIGH
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+operator:
+  scanJobTimeout: 5m
+  scanJobsConcurrentLimit: 3
+  vulnerabilityScannerScanOnlyCurrentRevisions: true
+  # Reports expire and get rescanned against the fresh DB, this is what finds new CVEs
+  scannerReportTTL: 24h
+serviceMonitor:
+  enabled: true

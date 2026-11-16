@@ -1,0 +1,6 @@
+crds:
+  enabled: true
+  keep: true   # deleting the app must not delete every Certificate
+replicaCount: 2
+podDisruptionBudget:
+  enabled: true

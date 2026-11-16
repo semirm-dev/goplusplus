@@ -1,0 +1,189 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test -race ./...
+
+  e2e:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t api:ci .
+
+      # checked out after the build, so it never lands in the build context
+      - uses: actions/checkout@v4
+        with:
+          repository: semirm-dev/platform-gitops
+          path: gitops
+
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: ci
+      - run: kind load docker-image api:ci --name ci
+
+      - name: Deploy the kind overlay
+        working-directory: gitops/workloads/api/overlays/kind
+        run: |
+          # the overlay carries Gateway API, prometheus-operator and Cilium objects, a bare kind cluster has none of their CRDs
+          kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
+          kubectl apply --server-side \
+            -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.85.0/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml \
+            -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.85.0/example/prometheus-operator-crd/monitoring.coreos.com_prometheusrules.yaml \
+            -f https://raw.githubusercontent.com/cilium/cilium/v1.18.2/pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml
+          kubectl create namespace api --dry-run=client -o yaml | kubectl apply -f -
+          kustomize edit set image api=api:ci
+          kubectl apply -k .
+          kubectl -n api rollout status deploy/api --timeout=120s
+
+      - name: Smoke test /readyz
+        run: |
+          kubectl -n api port-forward deploy/api 8080:8080 &
+          curl -fsS --retry 10 --retry-connrefused --retry-delay 2 http://localhost:8080/readyz
+
+      - name: Dump state on failure
+        if: failure()
+        run: |
+          kubectl -n api get pods,events
+          kubectl -n api logs deploy/api --tail=100
+
+  push:
+    needs: e2e
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_SERVICE_ACCOUNT }}
+          token_format: access_token
+      - uses: docker/login-action@v3
+        with:
+          registry: europe-west3-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: docker/setup-buildx-action@v3
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: europe-west3-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/apps/api:${{ github.sha }}
+
+  scan-sign:
+    needs: push
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write   # Fulcio cert for cosign, and the WIF exchange
+    env:
+      IMAGE: europe-west3-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/apps/api@${{ needs.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # gitleaks scans the history, not just the last commit
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_SERVICE_ACCOUNT }}
+          token_format: access_token
+      - uses: docker/login-action@v3
+        with:
+          registry: europe-west3-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Trivy image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Trivy config
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+      - uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+
+      - uses: sigstore/cosign-installer@v3
+      - name: Sign and attest by digest
+        run: |
+          cosign sign --yes "$IMAGE"
+          cosign attest --yes --type cyclonedx --predicate sbom.cdx.json "$IMAGE"
+
+  deliver:
+    needs: [push, scan-sign]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      IMAGE: europe-west3-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/apps/api
+      DIGEST: ${{ needs.push.outputs.digest }}
+    steps:
+      # GITHUB_TOKEN cannot write to another repository
+      - id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.GITOPS_APP_ID }}
+          private-key: ${{ secrets.GITOPS_APP_PRIVATE_KEY }}
+          owner: semirm-dev
+          repositories: platform-gitops
+
+      - uses: actions/checkout@v4
+        with:
+          repository: semirm-dev/platform-gitops
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Pin the digest
+        working-directory: workloads/api/overlays/gke
+        run: |
+          kustomize edit set image "api=${IMAGE}@${DIGEST}"
+          git diff
+
+      # one branch, so a newer build updates the open PR instead of opening another
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: deploy/api-gke
+          commit-message: "chore(api): deploy ${{ needs.push.outputs.digest }}"
+          title: "api: deploy ${{ github.sha }} to gke"
+          body: |
+            Image: `${{ env.IMAGE }}@${{ env.DIGEST }}`
+            Commit: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+            Scanned with Trivy, signed with cosign, SBOM attested.
+          labels: deploy

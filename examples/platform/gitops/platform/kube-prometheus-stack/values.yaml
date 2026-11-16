@@ -1,0 +1,12 @@
+prometheus:
+  prometheusSpec:
+    # false = pick up every ServiceMonitor/PrometheusRule, not only the ones labelled release=kps
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    retention: 15d
+grafana:
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki-gateway.monitoring.svc.cluster.local

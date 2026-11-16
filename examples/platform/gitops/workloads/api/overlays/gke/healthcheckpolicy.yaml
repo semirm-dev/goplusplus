@@ -1,0 +1,17 @@
+# The GKE load balancer checks "/" by default, not the readinessProbe.
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: api
+  namespace: api
+spec:
+  default:
+    config:
+      type: HTTP
+      httpHealthCheck:
+        port: 8080
+        requestPath: /readyz
+  targetRef:
+    group: ""
+    kind: Service
+    name: api

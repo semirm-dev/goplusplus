@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - allow-from-gateway.yaml
+patches:
+  - target: { kind: HorizontalPodAutoscaler, name: api }
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+  # with one replica a PDB would only block node drains
+  - patch: |-
+      $patch: delete
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
+      metadata:
+        name: api
+        namespace: api
+# docker build -t api:dev . && kind load docker-image api:dev --name platform
+images:
+  - name: api
+    newTag: dev

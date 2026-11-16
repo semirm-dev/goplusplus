@@ -1,0 +1,33 @@
+# Gateway API CRDs go in first, the operator only checks for them at startup:
+#   kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
+#   kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.3.0/config/crd/experimental/gateway.networking.k8s.io_tlsroutes.yaml
+# helm upgrade --install cilium cilium/cilium --version 1.18.2 -n kube-system -f values.yaml
+kubeProxyReplacement: true
+
+# No kube-proxy means no ClusterIP for the API server yet, so point at it directly.
+k8sServiceHost: platform-control-plane
+k8sServicePort: 6443
+
+ipam:
+  mode: kubernetes
+
+gatewayAPI:
+  enabled: true
+
+l2announcements:
+  enabled: true
+
+# L2 leases talk to the API server a lot, the default client limits throttle them.
+k8sClientRateLimit:
+  qps: 50
+  burst: 100
+
+operator:
+  replicas: 1
+
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true

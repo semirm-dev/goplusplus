@@ -1,0 +1,13 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: platform
+networking:
+  disableDefaultCNI: true   # no kindnet, Cilium is the CNI
+  kubeProxyMode: none       # no kube-proxy, Cilium handles Services in eBPF
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.33.1
+  - role: worker
+    image: kindest/node:v1.33.1
+  - role: worker
+    image: kindest/node:v1.33.1

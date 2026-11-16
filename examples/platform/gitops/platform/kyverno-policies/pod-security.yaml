@@ -1,0 +1,24 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pod-security-restricted
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  background: true
+  rules:
+    - name: restricted
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces: [kube-system, kube-public, kube-node-lease, kyverno, falco, trivy-system, "gke-*", "gmp-*"]
+      validate:
+        # Flip to Enforce once `kubectl get policyreport -A` shows no fails
+        failureAction: Audit
+        podSecurity:
+          level: restricted
+          version: latest

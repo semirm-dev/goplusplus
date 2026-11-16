@@ -1,0 +1,24 @@
+# Replace PROJECT_ID with the GCP project id
+initContainers:
+  - name: velero-plugin-for-gcp
+    image: velero/velero-plugin-for-gcp:v1.12.0
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+credentials:
+  useSecret: false
+serviceAccount:
+  server:
+    name: velero
+    annotations:
+      iam.gke.io/gcp-service-account: velero@PROJECT_ID.iam.gserviceaccount.com
+configuration:
+  backupStorageLocation:
+    - name: default
+      provider: gcp
+      bucket: PROJECT_ID-velero
+      config:
+        serviceAccount: velero@PROJECT_ID.iam.gserviceaccount.com
+# PD snapshots cannot be restored on kind. File-system backup copies the bytes to GCS.
+snapshotsEnabled: false
+deployNodeAgent: true

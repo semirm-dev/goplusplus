@@ -92,6 +92,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	w.Status.ObservedGeneration = w.Generation
 
+	// Not: r.Update, with the status subresource on, it drops status
 	if err := r.Status().Update(ctx, &w); err != nil {
 		return ctrl.Result{}, err
 	}

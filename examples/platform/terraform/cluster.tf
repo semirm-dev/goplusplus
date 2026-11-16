@@ -11,9 +11,9 @@ resource "google_container_cluster" "primary" {
   network    = google_compute_network.vpc.id
   subnetwork = google_compute_subnetwork.gke_subnet.id
 
-  remove_default_node_pool = true
-  initial_node_count       = 1
-  deletion_protection      = false # true for a cluster you keep
+  # No initial_node_count and no node_config: GKE creates no default pool.
+  # Nodes come only from google_container_node_pool.workers.
+  deletion_protection = false # true for a cluster you keep
 
   datapath_provider = "ADVANCED_DATAPATH" # Dataplane V2
 

@@ -1,15 +1,16 @@
-# No resources-finalizer here: deleting root must not uninstall the platform
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: root
+  name: projects
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   project: default
   source:
-    repoURL: https://github.com/semirm-dev/platform-gitops.git
-    targetRevision: main
-    path: apps
+    repoURL: "{{ .Values.repoURL }}"
+    targetRevision: "{{ .Values.targetRevision }}"
+    path: projects
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

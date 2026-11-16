@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kube-prometheus-stack
+  name: falco
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "1"
@@ -10,18 +10,23 @@ metadata:
 spec:
   project: platform
   sources:
-    - repoURL: https://prometheus-community.github.io/helm-charts
-      chart: kube-prometheus-stack
-      targetRevision: 77.0.0
+    - repoURL: https://falcosecurity.github.io/charts
+      chart: falco
+      targetRevision: 6.4.0
       helm:
         valueFiles:
-          - $values/platform/kube-prometheus-stack/values.yaml
-    - repoURL: https://github.com/semirm-dev/platform-gitops.git
-      targetRevision: main
+          - $values/platform/falco/values.yaml
+    - repoURL: "{{ .Values.repoURL }}"
+      targetRevision: "{{ .Values.targetRevision }}"
       ref: values
+    - repoURL: "{{ .Values.repoURL }}"
+      targetRevision: "{{ .Values.targetRevision }}"
+      path: platform/falco
+      directory:
+        exclude: values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: monitoring
+    namespace: falco
   syncPolicy:
     automated:
       prune: true

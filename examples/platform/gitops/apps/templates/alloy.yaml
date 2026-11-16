@@ -16,8 +16,8 @@ spec:
       helm:
         valueFiles:
           - $values/platform/alloy/values.yaml
-    - repoURL: https://github.com/semirm-dev/platform-gitops.git
-      targetRevision: main
+    - repoURL: "{{ .Values.repoURL }}"
+      targetRevision: "{{ .Values.targetRevision }}"
       ref: values
   destination:
     server: https://kubernetes.default.svc

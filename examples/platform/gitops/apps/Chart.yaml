@@ -1,0 +1,4 @@
+apiVersion: v2
+name: apps
+description: The app-of-apps, one Argo CD Application per tool
+version: 0.1.0

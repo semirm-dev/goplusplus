@@ -6,7 +6,14 @@ Everything runs locally first, on floci-gcp (Terraform) and kind (the in-cluster
 - `terraform/` -> VPC, node identity, private GKE cluster, CI identity, Velero bucket
 - `terraform/kms/` -> the secrets key, a separate root that is applied once and never destroyed
 - `docker-compose.yaml` -> floci-gcp, a local GCP API emulator
-- `gitops/` -> the `platform-gitops` repo that Argo CD syncs
+- `gitops/` -> the `platform-gitops` repo that Argo CD syncs:
+  - `bootstrap/root-<env>.yaml` -> the root Application, one per cluster
+  - `apps/` -> the app-of-apps, a Helm chart with one Application per tool in `templates/`
+    and `values-kind.yaml` / `values-gke.yaml` setting `env`
+  - `projects/` -> the AppProjects, synced at wave -1
+  - `platform/<tool>/` -> values and manifests per tool
+  - `clusters/<env>/` -> per-cluster values and the Gateway
+  - `workloads/api/` -> kustomize base and `overlays/<env>`
 - `app/` -> the `api` repo's Dockerfile and CI workflow
 
 ## Bring-up
@@ -29,10 +36,10 @@ Everything runs locally first, on floci-gcp (Terraform) and kind (the in-cluster
    helm upgrade --install cilium cilium/cilium --version 1.18.2 -n kube-system -f gitops/platform/cilium/values.yaml
    kubectl apply -f gitops/platform/cilium/lb-pool.yaml -f gitops/platform/cilium/l2-policy.yaml
    ```
-3. Argo CD and the root app:
+3. Argo CD and the root app. After this Argo CD manages itself from `apps/templates/argocd.yaml`:
    ```bash
    helm upgrade --install argocd argo/argo-cd --version 8.5.8 -n argocd --create-namespace -f gitops/platform/argocd/values.yaml
-   kubectl apply -f gitops/bootstrap/cluster.yaml -f gitops/bootstrap/root-app.yaml
+   kubectl apply -f gitops/bootstrap/root-kind.yaml
    ```
 4. When `openbao-0` is Running but not Ready, run `gitops/platform/openbao/bootstrap.sh`. Wave 0 waits for it.
 5. The api image on kind: `docker build -t api:dev . && kind load docker-image api:dev --name platform`.
@@ -44,7 +51,7 @@ Everything runs locally first, on floci-gcp (Terraform) and kind (the in-cluster
    terraform apply -var project_id=$PROJECT_ID -var emulator=false -var admin_cidr=$(curl -s ifconfig.me)/32
    gcloud container clusters get-credentials platform --zone europe-west3-a --project $PROJECT_ID
    ```
-   Then step 3 with `env: gke` in `bootstrap/cluster.yaml`, and step 4. Replace `PROJECT_ID` in
+   Then step 3 with `bootstrap/root-gke.yaml`, and step 4. Replace `PROJECT_ID` in
    `gitops/platform/velero/values.yaml` first.
 
 ## Posts
@@ -58,9 +65,9 @@ Everything runs locally first, on floci-gcp (Terraform) and kind (the in-cluster
 | Q1 | `gitops/clusters/kind/kind.yaml`, `gitops/platform/cilium/values.yaml` |
 | Q2 | `gitops/platform/cilium/lb-pool.yaml`, `gitops/platform/cilium/l2-policy.yaml`, `gitops/clusters/kind/gateway.yaml`, `gitops/workloads/api/base/httproute.yaml`, `gitops/workloads/api/overlays/gke/healthcheckpolicy.yaml` |
 | Q3 | `gitops/workloads/api/base/networkpolicy.yaml`, `gitops/workloads/api/overlays/*/allow-from-gateway.yaml` |
-| R1 | `gitops/platform/argocd/values.yaml`, `gitops/bootstrap/root-app.yaml`, `gitops/apps/project-platform.yaml` |
-| R2 | `gitops/apps/cert-manager.yaml`, `gitops/apps/cert-manager-config.yaml`, `gitops/platform/cert-manager/cluster-issuers.yaml` |
-| R3 | `gitops/bootstrap/cluster.yaml`, `gitops/apps/cert-manager.yaml`, `gitops/apps/api.yaml`, `gitops/clusters/` |
+| R1 | `gitops/bootstrap/root-kind.yaml`, `gitops/apps/templates/argocd.yaml`, `gitops/platform/argocd/values.yaml`, `gitops/projects/` |
+| R2 | `gitops/apps/templates/cert-manager.yaml`, `gitops/apps/templates/cert-manager-config.yaml`, `gitops/apps/templates/projects.yaml`, `gitops/platform/argocd/values.yaml` |
+| R3 | `gitops/apps/values-kind.yaml`, `gitops/apps/values-gke.yaml`, `gitops/apps/templates/cert-manager.yaml`, `gitops/apps/templates/velero.yaml`, `gitops/apps/templates/api.yaml`, `gitops/clusters/` |
 | S1 | `gitops/platform/openbao/bootstrap.sh`, `gitops/platform/external-secrets/cluster-secret-store.yaml`, `gitops/platform/cert-manager/cloudflare-token.yaml` |
 | S2 | `gitops/platform/cert-manager/cluster-issuers.yaml`, `gitops/platform/gateway/certificate.yaml`, `gitops/clusters/*/gateway.yaml` |
 | S3 | `gitops/platform/external-dns/values.yaml`, `gitops/workloads/api/base/httproute.yaml` |

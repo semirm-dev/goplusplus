@@ -3,8 +3,6 @@ kind: AppProject
 metadata:
   name: api
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
 spec:
   description: The api workload
   sourceRepos:

@@ -25,6 +25,7 @@ type WidgetStatus struct {
 // and generation goes up only when the spec changes.
 // Without it, status is just another field, anyone can overwrite it,
 // and observedGeneration never catches up.
+//
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 type Widget struct {

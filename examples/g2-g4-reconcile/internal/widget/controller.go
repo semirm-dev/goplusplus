@@ -31,6 +31,7 @@ type Reconciler struct {
 // RBAC: what the controller may do, controller-gen turns these into a ClusterRole.
 // widgets/status and widgets/finalizers are separate, so users can edit
 // a Widget without being able to touch its status.
+//
 // +kubebuilder:rbac:groups=goplusplus.semirmahovkic.xyz,resources=widgets,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups=goplusplus.semirmahovkic.xyz,resources=widgets/status,verbs=update
 // +kubebuilder:rbac:groups=goplusplus.semirmahovkic.xyz,resources=widgets/finalizers,verbs=update

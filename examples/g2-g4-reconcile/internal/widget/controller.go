@@ -48,14 +48,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	// # 2. G4: being deleted? clean up, remove the finalizer and stop, nothing else runs
 	if !w.DeletionTimestamp.IsZero() {
+		// no finalizer = cleanup is already done, nothing to do
 		if !controllerutil.ContainsFinalizer(&w, fin) {
 			return ctrl.Result{}, nil
 		}
 
+		// clean up what lives outside the cluster first, ex: AWS
 		if err := r.Shield.Unprotect(ctx, name); err != nil {
 			return ctrl.Result{}, err // stays Terminating until this works
 		}
 
+		// remove the finalizer last, only after the cleanup worked,
+		// then Kubernetes deletes the object
 		controllerutil.RemoveFinalizer(&w, fin)
 
 		// r.Update saves metadata (the finalizer is gone), status is ignored

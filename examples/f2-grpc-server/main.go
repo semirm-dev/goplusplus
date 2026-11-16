@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	orderv1 "github.com/semirm-dev/goplusplus/examples/f1-code-generation-with-buf/gen/order/v1"
+	orderv1 "github.com/semirm-dev/goplusplus/examples/f1-protobuf-and-buf/gen/order/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"

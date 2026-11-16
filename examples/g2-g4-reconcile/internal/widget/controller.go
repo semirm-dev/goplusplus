@@ -59,7 +59,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 
 		// remove the finalizer last, only after the cleanup worked,
-		// then Kubernetes deletes the object
+		// then Kubernetes deletes the object.
+		// It is only ever removed when the object is deleted.
 		controllerutil.RemoveFinalizer(&w, fin)
 
 		// r.Update saves metadata (the finalizer is gone), status is ignored

@@ -36,7 +36,7 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var w goplusplusv1.Widget
 
-	// get current CR state (widget), req has only namespace/name, no event
+	// 1. read the current object first, req has only namespace/name, no event
 	if err := r.Get(ctx, req.NamespacedName, &w); err != nil {
 		// not found = already deleted, nothing to do (returning err would retry it forever)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -44,7 +44,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	name := req.String()
 
-	// G4: the widget is being deleted
+	// 2. G4: being deleted? clean up, remove the finalizer and stop, nothing else runs
 	if !w.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(&w, fin) {
 			return ctrl.Result{}, nil
@@ -56,21 +56,25 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		controllerutil.RemoveFinalizer(&w, fin)
 
+		// r.Update saves metadata (the finalizer is gone), status is ignored
 		return ctrl.Result{}, r.Update(ctx, &w)
 	}
 
-	// G4: finalizer first, then the external resource.
+	// 3. G4: add the finalizer before you create anything outside the cluster
 	if controllerutil.AddFinalizer(&w, fin) {
+		// r.Update saves metadata (the new finalizer), status is ignored
 		if err := r.Update(ctx, &w); err != nil {
 			return ctrl.Result{}, err // 409 conflict, stale object, next run reads it fresh
 		}
 	}
 
+	// 4. G4: create or update what lives outside the cluster, ex: AWS Shield
 	if err := r.Shield.Protect(ctx, name); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// G4: the owner reference. Delete the Widget and Kubernetes deletes the ConfigMap.
+	// 5. G4: create or update what lives inside the cluster, ex: a ConfigMap
+	//    with an owner reference, so Kubernetes deletes it together with the Widget
 	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: w.Name, Namespace: w.Namespace}}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, cm, func() error {
@@ -81,7 +85,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, err
 	}
 
-	// G3: report what was done.
+	// 6. G3: set status in memory, nothing is saved yet
+	//    after any r.Update, it overwrites w.Status
+	//    lastTransitionTime moves only on a status change
 	meta.SetStatusCondition(&w.Status.Conditions, metav1.Condition{
 		Type:               "Available",
 		Status:             metav1.ConditionTrue,
@@ -92,13 +98,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	w.Status.ObservedGeneration = w.Generation
 
-	// Not: r.Update, with the status subresource on, it drops status
+	// 7. G3: save the status last, spec and metadata are ignored
 	if err := r.Status().Update(ctx, &w); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// example use case to automatically reconcile again after 10 minutes
-	// because nothing watches AWS objects, we need to check again later
+	// 8. reconcile again later if nothing watches what you created, ex: AWS
 	return ctrl.Result{RequeueAfter: 10 * time.Minute}, nil
 }
 

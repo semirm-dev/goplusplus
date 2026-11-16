@@ -36,6 +36,8 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var w goplusplusv1.Widget
 
+	// #### Get the current object ####
+
 	// # 1. read the current object first, req has only namespace/name, no event
 	if err := r.Get(ctx, req.NamespacedName, &w); err != nil {
 		// not found = already deleted, nothing to do (returning err would retry it forever)
@@ -61,6 +63,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// ### If not being deleted, continue with the rest of the logic... ###
+
+	// #### Update metadata, do the work ####
 
 	// # 3. G4: add the finalizer before you create anything outside the cluster,
 	//    on delete the object stays (Terminating) until you remove it, so you get a chance to clean up.
@@ -88,6 +92,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, err
 	}
 
+	// #### Update status ####
+
 	// # 6. G3: set status in memory, nothing is saved yet
 	//    after any r.Update, it overwrites w.Status
 	meta.SetStatusCondition(&w.Status.Conditions, metav1.Condition{
@@ -104,6 +110,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err := r.Status().Update(ctx, &w); err != nil {
 		return ctrl.Result{}, err
 	}
+
+	// #### Finished ####
 
 	// # 8. reconcile again later if nothing watches what you created, ex: AWS
 	return ctrl.Result{RequeueAfter: 10 * time.Minute}, nil

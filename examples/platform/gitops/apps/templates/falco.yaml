@@ -15,13 +15,13 @@ spec:
       targetRevision: 6.4.0
       helm:
         valueFiles:
-          - $values/platform/falco/values.yaml
+          - $values/{{ .Values.basePath }}/platform/falco/values.yaml
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
       ref: values
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
-      path: platform/falco
+      path: {{ .Values.basePath }}/platform/falco
       directory:
         exclude: values.yaml
   destination:

@@ -7,9 +7,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/semirm-dev/platform-gitops.git
+    repoURL: https://github.com/semirm-dev/goplusplus.git
     targetRevision: main
-    path: apps
+    path: examples/platform/gitops/apps
     helm:
       valueFiles:
         - values-kind.yaml

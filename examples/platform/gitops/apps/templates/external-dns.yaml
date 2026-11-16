@@ -17,13 +17,13 @@ spec:
       targetRevision: 1.19.0
       helm:
         valueFiles:
-          - $values/platform/external-dns/values.yaml
+          - $values/{{ .Values.basePath }}/platform/external-dns/values.yaml
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
       ref: values
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
-      path: platform/external-dns
+      path: {{ .Values.basePath }}/platform/external-dns
       directory:
         exclude: values.yaml
   destination:

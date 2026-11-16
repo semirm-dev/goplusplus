@@ -1,2 +1,4 @@
-repoURL: https://github.com/semirm-dev/platform-gitops.git
+repoURL: https://github.com/semirm-dev/goplusplus.git
 targetRevision: main
+# the GitOps tree is a subdirectory of the goplusplus repo
+basePath: examples/platform/gitops

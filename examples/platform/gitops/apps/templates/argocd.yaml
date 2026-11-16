@@ -16,7 +16,7 @@ spec:
       targetRevision: 8.5.8
       helm:
         valueFiles:
-          - $values/platform/argocd/values.yaml
+          - $values/{{ .Values.basePath }}/platform/argocd/values.yaml
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
       ref: values

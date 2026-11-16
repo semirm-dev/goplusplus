@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: "{{ .Values.repoURL }}"
     targetRevision: "{{ .Values.targetRevision }}"
-    path: workloads/api/overlays/{{ .Values.env }}
+    path: {{ .Values.basePath }}/workloads/api/overlays/{{ .Values.env }}
   destination:
     server: https://kubernetes.default.svc
     namespace: api

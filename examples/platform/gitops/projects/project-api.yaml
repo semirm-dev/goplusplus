@@ -6,7 +6,7 @@ metadata:
 spec:
   description: The api workload
   sourceRepos:
-    - https://github.com/semirm-dev/platform-gitops.git
+    - https://github.com/semirm-dev/goplusplus.git
   destinations:
     - { server: https://kubernetes.default.svc, namespace: api }
   clusterResourceWhitelist:

@@ -1,12 +1,22 @@
-name: ci
+name: platform-api
 
 on:
-  pull_request:
   push:
     branches: [main]
+    paths:
+      - examples/platform/app/**
+      - .github/workflows/platform-api.yaml
+  pull_request:
+    paths:
+      - examples/platform/app/**
+      - .github/workflows/platform-api.yaml
 
 permissions:
   contents: read
+
+defaults:
+  run:
+    working-directory: examples/platform/app
 
 jobs:
   test:
@@ -15,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: examples/platform/app/go.mod
       - run: go vet ./...
       - run: go test -race ./...
 
@@ -26,19 +36,13 @@ jobs:
       - uses: actions/checkout@v4
       - run: docker build -t api:ci .
 
-      # checked out after the build, so it never lands in the build context
-      - uses: actions/checkout@v4
-        with:
-          repository: semirm-dev/platform-gitops
-          path: gitops
-
       - uses: helm/kind-action@v1
         with:
           cluster_name: ci
       - run: kind load docker-image api:ci --name ci
 
       - name: Deploy the kind overlay
-        working-directory: gitops/workloads/api/overlays/kind
+        working-directory: examples/platform/gitops/workloads/api/overlays/kind
         run: |
           # the overlay carries Gateway API, prometheus-operator and Cilium objects, a bare kind cluster has none of their CRDs
           kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
@@ -64,7 +68,7 @@ jobs:
 
   push:
     needs: e2e
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -88,6 +92,7 @@ jobs:
       - id: build
         uses: docker/build-push-action@v6
         with:
+          context: examples/platform/app
           push: true
           tags: europe-west3-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/apps/api:${{ github.sha }}
 
@@ -130,7 +135,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: config
-          scan-ref: .
+          scan-ref: examples/platform/app
           severity: CRITICAL,HIGH
           exit-code: "1"
 
@@ -146,40 +151,32 @@ jobs:
           cosign sign --yes "$IMAGE"
           cosign attest --yes --type cyclonedx --predicate sbom.cdx.json "$IMAGE"
 
+  # The PR below only touches examples/platform/gitops/**, outside the paths filter above,
+  # so merging it does not trigger this workflow again.
   deliver:
     needs: [push, scan-sign]
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
     env:
       IMAGE: europe-west3-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/apps/api
       DIGEST: ${{ needs.push.outputs.digest }}
     steps:
-      # GITHUB_TOKEN cannot write to another repository
-      - id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.GITOPS_APP_ID }}
-          private-key: ${{ secrets.GITOPS_APP_PRIVATE_KEY }}
-          owner: semirm-dev
-          repositories: platform-gitops
-
       - uses: actions/checkout@v4
-        with:
-          repository: semirm-dev/platform-gitops
-          token: ${{ steps.app-token.outputs.token }}
 
       - name: Pin the digest
-        working-directory: workloads/api/overlays/gke
+        working-directory: examples/platform/gitops/workloads/api/overlays/gke
         run: |
           kustomize edit set image "api=${IMAGE}@${DIGEST}"
           git diff
 
-      # one branch, so a newer build updates the open PR instead of opening another
+      # one branch, so a newer build updates the open PR instead of opening another.
+      # Needs "Allow GitHub Actions to create and approve pull requests" in the repo settings.
       - uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ steps.app-token.outputs.token }}
           branch: deploy/api-gke
+          add-paths: examples/platform/gitops/**
           commit-message: "chore(api): deploy ${{ needs.push.outputs.digest }}"
           title: "api: deploy ${{ github.sha }} to gke"
           body: |

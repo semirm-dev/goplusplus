@@ -12,11 +12,11 @@ spec:
   sources:
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
-      path: platform/gateway
+      path: {{ .Values.basePath }}/platform/gateway
     # the Gateway differs per cluster only in its gatewayClassName
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
-      path: clusters/{{ .Values.env }}
+      path: {{ .Values.basePath }}/clusters/{{ .Values.env }}
       directory:
         include: gateway.yaml
   destination:

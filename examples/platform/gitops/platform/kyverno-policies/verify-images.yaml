@@ -27,7 +27,7 @@ spec:
             - entries:
                 - keyless:
                     issuer: "https://token.actions.githubusercontent.com"
-                    subjectRegExp: '^https://github\.com/semirm-dev/api/.+@refs/heads/main$'
+                    subjectRegExp: '^https://github\.com/semirm-dev/goplusplus/\.github/workflows/platform-api\.yaml@refs/heads/main$'
                     rekor:
                       url: https://rekor.sigstore.dev
           attestations:
@@ -37,7 +37,7 @@ spec:
                 - entries:
                     - keyless:
                         issuer: "https://token.actions.githubusercontent.com"
-                        subjectRegExp: '^https://github\.com/semirm-dev/api/.+@refs/heads/main$'
+                        subjectRegExp: '^https://github\.com/semirm-dev/goplusplus/\.github/workflows/platform-api\.yaml@refs/heads/main$'
                         rekor:
                           url: https://rekor.sigstore.dev
               conditions:

@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: "{{ .Values.repoURL }}"
     targetRevision: "{{ .Values.targetRevision }}"
-    path: platform/kyverno-policies
+    path: {{ .Values.basePath }}/platform/kyverno-policies
   destination:
     server: https://kubernetes.default.svc
     namespace: kyverno

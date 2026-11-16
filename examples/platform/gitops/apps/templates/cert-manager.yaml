@@ -15,7 +15,7 @@ spec:
       targetRevision: v1.18.2
       helm:
         valueFiles:
-          - $values/clusters/{{ .Values.env }}/cert-manager.yaml
+          - $values/{{ .Values.basePath }}/clusters/{{ .Values.env }}/cert-manager.yaml
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
       ref: values

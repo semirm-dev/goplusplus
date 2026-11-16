@@ -17,13 +17,13 @@ spec:
       targetRevision: 10.0.0
       helm:
         valueFiles:
-          - $values/platform/velero/values.yaml
+          - $values/{{ .Values.basePath }}/platform/velero/values.yaml
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
       ref: values
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
-      path: platform/velero
+      path: {{ .Values.basePath }}/platform/velero
       directory:
         exclude: values.yaml
   destination:

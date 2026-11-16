@@ -40,8 +40,13 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.ref"        = "assertion.ref"
   }
 
-  # only main of this one repo can exchange a token, every other GitHub token is rejected here
-  attribute_condition = "assertion.repository == 'semirm-dev/api' && assertion.ref == 'refs/heads/main'"
+  # only the platform-api workflow on main of this one repo can exchange a token,
+  # every other GitHub token (other workflows in the same repo included) is rejected here
+  attribute_condition = <<-EOT
+    assertion.repository == 'semirm-dev/goplusplus' &&
+    assertion.ref == 'refs/heads/main' &&
+    assertion.job_workflow_ref == 'semirm-dev/goplusplus/.github/workflows/platform-api.yaml@refs/heads/main'
+  EOT
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
@@ -66,7 +71,7 @@ resource "google_artifact_registry_repository_iam_member" "ci_writer" {
 resource "google_service_account_iam_member" "ci_wif" {
   service_account_id = google_service_account.ci.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/semirm-dev/api"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/semirm-dev/goplusplus"
 }
 
 output "wif_provider" {

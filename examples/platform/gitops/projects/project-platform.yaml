@@ -4,9 +4,9 @@ metadata:
   name: platform
   namespace: argocd
 spec:
-  description: Platform tools from platform-gitops
+  description: Platform tools from goplusplus/examples/platform/gitops
   sourceRepos:
-    - https://github.com/semirm-dev/platform-gitops.git
+    - https://github.com/semirm-dev/goplusplus.git
     - https://openbao.github.io/openbao-helm
     - https://charts.external-secrets.io
     - https://charts.jetstack.io

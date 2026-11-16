@@ -15,7 +15,7 @@ spec:
       targetRevision: 1.16.0
       helm:
         valueFiles:
-          - $values/platform/alloy/values.yaml
+          - $values/{{ .Values.basePath }}/platform/alloy/values.yaml
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
       ref: values

@@ -5,6 +5,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // WidgetSpec is written by the user: the config fragments to merge, in order.
 type WidgetSpec struct {
 	// validation: the API server rejects a Widget with no fragments
+	//
 	// +kubebuilder:validation:MinItems=1
 	Fragments []string `json:"fragments"`
 }
@@ -37,6 +38,7 @@ type Widget struct {
 }
 
 // WidgetList is what a List call returns.
+//
 // +kubebuilder:object:root=true
 type WidgetList struct {
 	metav1.TypeMeta `json:",inline"`

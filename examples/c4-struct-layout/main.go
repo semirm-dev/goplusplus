@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #19 · Memory: Struct layout
+// 🌩 Go++ 🌩 #18 · Memory: Struct layout
 package main
 
 import (

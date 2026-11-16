@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #31 · gRPC: Streaming
+// 🌩 Go++ 🌩 #29 · gRPC: Streaming
 package main
 
 import (

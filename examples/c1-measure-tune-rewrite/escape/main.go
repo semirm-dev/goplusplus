@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #16 · Memory: Measure, tune, rewrite
+// 🌩 Go++ 🌩 #15 · Memory: Measure, tune, rewrite
 package main
 
 // Run: go build -gcflags="-m" ./escape

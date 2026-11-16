@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #33-#35 · Kubernetes Operators: Reconcile loop, Spec and status, Cleanup
+// 🌩 Go++ 🌩 #31-#32 · Kubernetes Operators: Reconcile loop, Spec and status
 package widget
 
 import (
@@ -50,7 +50,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	name := req.String()
 
-	// # 2. G4: being deleted? clean up, remove the finalizer and stop, nothing else runs
+	// # 2. G3: being deleted? clean up, remove the finalizer and stop, nothing else runs
 	if !w.DeletionTimestamp.IsZero() {
 		// no finalizer = cleanup is already done, nothing to do
 		if !controllerutil.ContainsFinalizer(&w, fin) {
@@ -75,7 +75,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	// #### Update metadata, do the work ####
 
-	// # 3. G4: add the finalizer before you create anything outside the cluster,
+	// # 3. G3: add the finalizer before you create anything outside the cluster,
 	//    on delete the object stays (Terminating) until you remove it, so you get a chance to clean up.
 	if controllerutil.AddFinalizer(&w, fin) {
 		// r.Update saves metadata (the new finalizer), status is ignored
@@ -84,12 +84,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 	}
 
-	// # 4. G4: do whatever you need to do outside the cluster, ex: calling third-party APIs...
+	// # 4. G3: do whatever you need to do outside the cluster, ex: calling third-party APIs...
 	if err := r.Shield.Protect(ctx, name); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// # 5. G4: create or update what lives inside the cluster, manipulate kubernetes objects, ex: a ConfigMap,
+	// # 5. G3: create or update what lives inside the cluster, manipulate kubernetes objects, ex: a ConfigMap,
 	//    with an owner reference, so Kubernetes deletes it together with your custom resource...
 	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: w.Name, Namespace: w.Namespace}}
 

@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #18 · Memory: Slices and maps
+// 🌩 Go++ 🌩 #17 · Memory: Slices and maps
 package main
 
 import "fmt"

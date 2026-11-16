@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #13 · Concurrency: Pipeline
+// 🌩 Go++ 🌩 #12 · Concurrency: Pipeline
 package main
 
 import (

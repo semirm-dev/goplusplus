@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #15 · Concurrency: errgroup
+// 🌩 Go++ 🌩 #14 · Concurrency: errgroup
 package main
 
 import (

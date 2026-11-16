@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #14 · Concurrency: Semaphore
+// 🌩 Go++ 🌩 #13 · Concurrency: Semaphore
 package main
 
 import (

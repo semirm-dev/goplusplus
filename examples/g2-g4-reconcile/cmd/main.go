@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #33-#35 · Kubernetes Operators
+// 🌩 Go++ 🌩 #31-#32 · Kubernetes Operators
 package main
 
 import (

@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #27 · Auth: OAuth login
+// 🌩 Go++ 🌩 #26 · Auth: OAuth login
 package main
 
 import (

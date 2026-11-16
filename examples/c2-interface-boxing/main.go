@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #17 · Memory: Avoid interface boxing
+// 🌩 Go++ 🌩 #16 · Memory: Avoid interface boxing
 package main
 
 import (

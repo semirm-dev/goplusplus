@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #32 · Kubernetes Operators
+// 🌩 Go++ 🌩 #30 · Kubernetes Operators
 package widget
 
 import (

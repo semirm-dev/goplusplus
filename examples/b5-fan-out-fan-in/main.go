@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #12 · Concurrency: Fan-out, fan-in
+// 🌩 Go++ 🌩 #11 · Concurrency: Fan-out, fan-in
 package main
 
 import (

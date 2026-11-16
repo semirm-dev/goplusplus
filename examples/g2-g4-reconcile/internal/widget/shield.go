@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #35 · Kubernetes Operators: Cleanup
+// 🌩 Go++ 🌩 #32 · Kubernetes Operators: Spec and status
 package widget
 
 import "context"

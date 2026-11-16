@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #33 · Kubernetes Operators: Reconcile loop
+// 🌩 Go++ 🌩 #31 · Kubernetes Operators: Reconcile loop
 package widget
 
 import (

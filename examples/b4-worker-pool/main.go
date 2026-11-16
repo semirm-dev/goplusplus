@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #11 · Concurrency: Worker pool
+// 🌩 Go++ 🌩 #10 · Concurrency: Worker pool
 package main
 
 import (

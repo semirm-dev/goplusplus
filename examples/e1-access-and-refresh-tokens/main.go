@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #25 · Auth: Access and refresh tokens
+// 🌩 Go++ 🌩 #24 · Auth: Access and refresh tokens
 package main
 
 import (

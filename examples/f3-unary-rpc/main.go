@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #30 · gRPC: Unary RPC
+// 🌩 Go++ 🌩 #28 · gRPC: Unary RPC
 package main
 
 import (

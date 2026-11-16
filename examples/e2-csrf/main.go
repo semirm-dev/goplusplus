@@ -1,4 +1,4 @@
-// 🌩 Go++ 🌩 #26 · Auth: CSRF
+// 🌩 Go++ 🌩 #25 · Auth: CSRF
 package main
 
 import (

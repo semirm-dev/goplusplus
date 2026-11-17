@@ -1,0 +1,7 @@
+# kind has no argocd.example.com to call back to, so no SSO: the admin login,
+# password in the argocd-initial-admin-secret Secret
+dex:
+  enabled: false
+configs:
+  cm:
+    admin.enabled: "true"

@@ -20,4 +20,4 @@ spec:
           from: Selector
           selector:
             matchLabels:
-              gateway.example.com/public: "true"
+              public-gateway: "true"

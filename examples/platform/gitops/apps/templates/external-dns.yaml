@@ -1,4 +1,4 @@
-{{- if eq .Values.env "gke" }}
+{{- if and (eq .Values.env "gke") .Values.tracks.dns }}
 # GKE only: on kind the Gateway address is private and useless in public DNS
 apiVersion: argoproj.io/v1alpha1
 kind: Application

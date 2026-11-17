@@ -17,6 +17,7 @@ spec:
       helm:
         valueFiles:
           - $values/{{ .Values.basePath }}/platform/argocd/values.yaml
+          - $values/{{ .Values.basePath }}/clusters/{{ .Values.env }}/argocd.yaml
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
       ref: values
@@ -29,6 +30,7 @@ spec:
       selfHeal: true
     syncOptions:
       - ServerSideApply=true
+{{- if .Values.tracks.secrets }}
 ---
 # The Dex secret is its own app: the ExternalSecret CRD arrives in wave 0, after
 # Argo CD's wave -1, and a failed sync there would stall root at wave -1.
@@ -64,3 +66,4 @@ spec:
         duration: 10s
         factor: 2
         maxDuration: 3m
+{{- end }}

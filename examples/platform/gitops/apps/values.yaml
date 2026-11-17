@@ -2,3 +2,15 @@ repoURL: https://github.com/semirm-dev/goplusplus.git
 targetRevision: main
 # the GitOps tree is a subdirectory of the goplusplus repo
 basePath: examples/platform/gitops
+
+# What Argo CD installs. All off to start with: the tutorial turns them on one at a time,
+# in the order of the posts, each with a commit. Argo CD and the AppProjects are always on.
+tracks:
+  gateway: false        # R1: the Gateway from Q2
+  api: false            # R1: the api and its NetworkPolicies from Q2 and Q3
+  secrets: false        # S1: cert-manager, External Secrets, OpenBao
+  dns: false            # S3: external-dns, GKE only
+  guardrails: false     # U1: Kyverno and its policies
+  runtime: false        # U3: trivy-operator, Falco
+  observability: false  # V1: Prometheus, Grafana, Loki, Alloy
+  backups: false        # V3: Velero, GKE only

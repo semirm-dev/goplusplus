@@ -1,4 +1,5 @@
-# Same on kind and GKE, only the Gateway behind "public" differs
+# Same on kind and GKE, only the Gateway behind "public" differs.
+# No sectionName: it attaches to every listener, HTTP and HTTPS on kind, HTTPS on GKE.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -8,7 +9,6 @@ spec:
   parentRefs:
     - name: public
       namespace: gateway
-      sectionName: https
   hostnames:
     - api.example.com
   rules:

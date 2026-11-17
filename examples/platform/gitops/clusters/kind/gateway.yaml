@@ -6,6 +6,17 @@ metadata:
 spec:
   gatewayClassName: cilium
   listeners:
+    # plain HTTP on kind only, so the route works before S2 issues the certificate
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "*.example.com"
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              public-gateway: "true"
     - name: https
       protocol: HTTPS
       port: 443
@@ -20,4 +31,4 @@ spec:
           from: Selector
           selector:
             matchLabels:
-              gateway.example.com/public: "true"
+              public-gateway: "true"

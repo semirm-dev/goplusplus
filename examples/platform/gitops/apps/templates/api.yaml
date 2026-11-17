@@ -1,3 +1,4 @@
+{{- if .Values.tracks.api }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -25,4 +26,5 @@ spec:
     # lets the api's HTTPRoute attach to the public Gateway
     managedNamespaceMetadata:
       labels:
-        gateway.example.com/public: "true"
+        public-gateway: "true"
+{{- end }}

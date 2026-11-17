@@ -1,3 +1,4 @@
+{{- if .Values.tracks.gateway }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -10,9 +11,12 @@ metadata:
 spec:
   project: platform
   sources:
+    {{- if .Values.tracks.secrets }}
+    # the wildcard Certificate needs cert-manager, so it comes with the secrets track
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
       path: {{ .Values.basePath }}/platform/gateway
+    {{- end }}
     # the Gateway differs per cluster only in its gatewayClassName
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
@@ -28,3 +32,4 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+{{- end }}

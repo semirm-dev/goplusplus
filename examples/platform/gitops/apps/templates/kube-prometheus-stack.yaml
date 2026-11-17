@@ -1,3 +1,4 @@
+{{- if .Values.tracks.observability }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -35,3 +36,4 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true   # ExternalSecret CRDs may not exist yet on first sync
+{{- end }}

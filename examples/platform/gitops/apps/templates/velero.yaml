@@ -1,4 +1,4 @@
-{{- if eq .Values.env "gke" }}
+{{- if and (eq .Values.env "gke") .Values.tracks.backups }}
 # GKE only: it reaches GCS through Workload Identity
 apiVersion: argoproj.io/v1alpha1
 kind: Application

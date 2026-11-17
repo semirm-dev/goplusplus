@@ -90,7 +90,8 @@ and app commits don't wake Argo CD. One repo keeps this example readable in one 
    gcloud container clusters get-credentials platform --zone europe-west3-a --project $PROJECT_ID
    ```
    Then step 3 with `bootstrap/root-gke.yaml`, and step 4. First replace `PROJECT_ID` in
-   `gitops/platform/velero/values.yaml` and `gitops/clusters/gke/openbao.yaml`, and create the
+   `gitops/platform/velero/values.yaml`, `gitops/clusters/gke/openbao.yaml` and
+   `gitops/platform/kyverno/values.yaml`, and create the
    branch GKE follows: `git push origin main:refs/heads/env/gke`.
 
 ## Posts
@@ -115,7 +116,7 @@ and app commits don't wake Argo CD. One repo keeps this example readable in one 
 | T3 | `.github/workflows/platform-api.yaml` (`build` for Trivy, `sign`) |
 | T4 | `.github/workflows/platform-api.yaml` (`deliver`), `gitops/workloads/api/overlays/gke/kustomization.yaml` |
 | U1 | `gitops/platform/kyverno/values.yaml`, `gitops/platform/kyverno-policies/pod-security.yaml`, `gitops/platform/kyverno-policies/images-and-resources.yaml` |
-| U2 | `gitops/platform/kyverno-policies/verify-images.yaml` |
+| U2 | `gitops/platform/kyverno-policies/verify-images.yaml`, `terraform/kyverno.tf` |
 | U3 | `gitops/platform/trivy-operator/values.yaml`, `gitops/platform/falco/values.yaml` |
 | V1 | `gitops/platform/kube-prometheus-stack/`, `gitops/platform/loki/values.yaml`, `gitops/platform/alloy/values.yaml`, `gitops/workloads/api/base/servicemonitor.yaml`, `gitops/workloads/api/base/prometheusrule.yaml` |
 | V2 | `gitops/workloads/api/base/deployment-resources.yaml`, `gitops/workloads/api/base/hpa.yaml`, `gitops/workloads/api/base/pdb.yaml`, `gitops/workloads/api/base/deployment.yaml`, `terraform/node_pool.tf` |

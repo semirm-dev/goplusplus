@@ -4,6 +4,11 @@ admissionController:
   replicas: 3
   podDisruptionBudget:
     enabled: true
+  rbac:
+    serviceAccount:
+      annotations:
+        # Replace PROJECT_ID. Reads signatures from Artifact Registry on GKE (terraform/kyverno.tf)
+        iam.gke.io/gcp-service-account: kyverno@PROJECT_ID.iam.gserviceaccount.com
 backgroundController:
   replicas: 2
 cleanupController:

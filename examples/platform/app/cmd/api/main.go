@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -56,14 +57,41 @@ func newRouter(ready *atomic.Bool) *gin.Engine {
 		}
 		c.Status(http.StatusOK)
 	})
-	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	r.GET("/v1/hello", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "hello"})
 	})
 	return r
 }
 
+// trustedProxies parses TRUSTED_PROXIES: the hops allowed to set X-Forwarded-For.
+// Empty trusts none, so the client IP is the peer address.
+func trustedProxies(env string) []string {
+	if env == "" {
+		return nil
+	}
+	return strings.Split(env, ",")
+}
+
+func newServer(addr string, h http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              addr,
+		Handler:           h,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+}
+
+func serve(srv *http.Server) {
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		slog.Error("serve", "addr", srv.Addr, "err", err)
+		os.Exit(1)
+	}
+}
+
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	gin.SetMode(gin.ReleaseMode)
 
 	port := os.Getenv("PORT")
@@ -73,30 +101,22 @@ func main() {
 
 	var ready atomic.Bool
 	r := newRouter(&ready)
-	// Pod CIDRs: the gateway reaches the pod from inside the cluster.
-	if err := r.SetTrustedProxies([]string{"10.0.0.0/8"}); err != nil {
-		log.Fatal(err)
+	if err := r.SetTrustedProxies(trustedProxies(os.Getenv("TRUSTED_PROXIES"))); err != nil {
+		slog.Error("trusted proxies", "err", err)
+		os.Exit(1)
 	}
 
-	srv := &http.Server{
-		Addr:              ":" + port,
-		Handler:           r,
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       60 * time.Second,
-	}
+	srv := newServer(":"+port, r)
+	// Metrics on their own port: the HTTPRoute only reaches 8080, so /metrics is never public.
+	metricsSrv := newServer(":9090", promhttp.Handler())
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
-		}
-	}()
+	go serve(srv)
+	go serve(metricsSrv)
 	ready.Store(true)
-	log.Println("listening on :" + port)
+	slog.Info("listening", "addr", srv.Addr, "metrics", metricsSrv.Addr)
 
 	<-ctx.Done()
 	stop()
@@ -109,6 +129,10 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Println("shutdown:", err)
+		slog.Error("shutdown", "err", err)
+	}
+	// Last, so the final requests are still scrapeable while the API drains.
+	if err := metricsSrv.Shutdown(shutdownCtx); err != nil {
+		slog.Error("shutdown metrics", "err", err)
 	}
 }

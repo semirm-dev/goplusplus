@@ -22,3 +22,7 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+    # lets the api's HTTPRoute attach to the public Gateway
+    managedNamespaceMetadata:
+      labels:
+        gateway.example.com/public: "true"

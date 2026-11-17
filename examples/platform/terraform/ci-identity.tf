@@ -43,9 +43,9 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   # only the platform-api workflow on main of this one repo can exchange a token,
   # every other GitHub token (other workflows in the same repo included) is rejected here
   attribute_condition = <<-EOT
-    assertion.repository == 'semirm-dev/goplusplus' &&
+    assertion.repository == '${var.github_repo}' &&
     assertion.ref == 'refs/heads/main' &&
-    assertion.job_workflow_ref == 'semirm-dev/goplusplus/.github/workflows/platform-api.yaml@refs/heads/main'
+    assertion.job_workflow_ref == '${var.github_repo}/.github/workflows/platform-api.yaml@refs/heads/main'
   EOT
 
   oidc {
@@ -71,7 +71,7 @@ resource "google_artifact_registry_repository_iam_member" "ci_writer" {
 resource "google_service_account_iam_member" "ci_wif" {
   service_account_id = google_service_account.ci.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/semirm-dev/goplusplus"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.github_repo}"
 }
 
 output "wif_provider" {

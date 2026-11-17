@@ -1,1 +1,3 @@
 env: gke
+# the child apps follow the same branch as root-gke.yaml
+targetRevision: env/gke

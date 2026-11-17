@@ -17,6 +17,13 @@ patches:
       metadata:
         name: api
         namespace: api
+  # Cilium's Envoy proxies from an address in the pod CIDR (kind's default 10.244.0.0/16)
+  - target: { kind: Deployment, name: api }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env
+        value:
+          - { name: TRUSTED_PROXIES, value: "10.244.0.0/16" }
 # docker build -t api:dev . && kind load docker-image api:dev --name platform
 images:
   - name: api

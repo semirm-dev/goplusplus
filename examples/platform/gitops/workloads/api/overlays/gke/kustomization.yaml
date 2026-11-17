@@ -10,6 +10,13 @@ patches:
       - op: replace
         path: /spec/minReplicas
         value: 3
+  # requests arrive from Google front ends, the same ranges as allow-from-gateway.yaml
+  - target: { kind: Deployment, name: api }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env
+        value:
+          - { name: TRUSTED_PROXIES, value: "35.191.0.0/16,130.211.0.0/22" }
 images:
   - name: api
     newName: europe-west3-docker.pkg.dev/floci-local/apps/api

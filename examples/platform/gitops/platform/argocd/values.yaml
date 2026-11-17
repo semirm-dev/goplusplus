@@ -1,8 +1,23 @@
 # helm upgrade --install argocd argo/argo-cd --version 8.5.8 -n argocd --create-namespace -f values.yaml
-dex:
-  enabled: false
+global:
+  # GitHub OAuth app callback: https://argocd.example.com/api/dex/callback
+  domain: argocd.example.com
 configs:
   cm:
+    # Locked out before SSO works? `argocd login --core` goes through your
+    # kubeconfig instead, or set this to "true" in Git for the emergency.
+    admin.enabled: "false"
+    dex.config: |
+      connectors:
+        - type: github
+          id: github
+          name: GitHub
+          config:
+            clientID: YOUR_GITHUB_OAUTH_CLIENT_ID
+            # from the argocd-dex-github Secret, synced by dex-github.yaml
+            clientSecret: $argocd-dex-github:clientSecret
+            orgs:
+              - name: your-github-org
     # Let Argo see a child Application's health, so sync waves wait for it
     resource.customizations.health.argoproj.io_Application: |
       hs = {}
@@ -15,3 +30,8 @@ configs:
         end
       end
       return hs
+  rbac:
+    # everyone who logs in can look, only the admin team can change things
+    policy.default: role:readonly
+    policy.csv: |
+      g, your-github-org:platform-admins, role:admin

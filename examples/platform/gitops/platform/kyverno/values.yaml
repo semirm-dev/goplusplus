@@ -1,0 +1,12 @@
+# The webhooks fail closed: with one admission pod, a restart blocks every
+# pod create once a policy is on Enforce. The PDB stops a drain taking all three.
+admissionController:
+  replicas: 3
+  podDisruptionBudget:
+    enabled: true
+backgroundController:
+  replicas: 2
+cleanupController:
+  replicas: 2
+reportsController:
+  replicas: 2

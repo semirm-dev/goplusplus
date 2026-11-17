@@ -1,8 +1,29 @@
+# Multi-region: a backup must outlive the region the cluster runs in
 resource "google_storage_bucket" "velero" {
   name                        = "${var.project_id}-velero"
-  location                    = var.region
+  location                    = "EU"
   uniform_bucket_level_access = true
   public_access_prevention    = "enforced"
+  force_destroy               = true # dev cluster, destroyed daily; false for a cluster you keep
+
+  # Velero must delete expired backups, so versioning and soft delete are what survive a deletion
+  versioning {
+    enabled = true
+  }
+
+  soft_delete_policy {
+    retention_duration_seconds = 604800 # 7 days
+  }
+
+  lifecycle_rule {
+    condition {
+      days_since_noncurrent_time = 30
+      with_state                 = "ARCHIVED"
+    }
+    action {
+      type = "Delete"
+    }
+  }
 }
 
 resource "google_service_account" "velero" {

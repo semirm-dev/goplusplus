@@ -14,29 +14,83 @@ on:
 permissions:
   contents: read
 
+# one run per ref: a newer push to main cancels the older run, so an older digest can never
+# land in the deploy PR after a newer one
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     working-directory: examples/platform/app
 
 jobs:
+  secrets:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read   # gitleaks lists the PR's commits
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0   # gitleaks scans the history, not just the last commit
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: false
+
   test:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: examples/platform/app/go.mod
       - run: go vet ./...
       - run: go test -race ./...
 
-  e2e:
-    needs: test
+  # the image is built once, here: e2e tests these bytes and push ships them
+  build:
+    needs: [secrets, test]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - run: docker build -t api:ci .
 
-      - uses: helm/kind-action@v1
+      - name: Trivy image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: api:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Trivy config
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: examples/platform/app
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+      - run: docker save -o ${{ runner.temp }}/api.tar api:ci
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: api-image
+          path: ${{ runner.temp }}/api.tar
+          retention-days: 1
+
+  e2e:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: api-image
+          path: ${{ runner.temp }}
+      - run: docker load -i ${{ runner.temp }}/api.tar
+
+      - uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
         with:
           cluster_name: ci
       - run: kind load docker-image api:ci --name ci
@@ -74,29 +128,36 @@ jobs:
       contents: read
       id-token: write
     outputs:
-      digest: ${{ steps.build.outputs.digest }}
+      digest: ${{ steps.push.outputs.digest }}
+    env:
+      IMAGE: europe-west3-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/apps/api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: api-image
+          path: ${{ runner.temp }}
       - id: auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.CI_SERVICE_ACCOUNT }}
           token_format: access_token
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: europe-west3-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
-      - uses: docker/setup-buildx-action@v3
-      - id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: examples/platform/app
-          push: true
-          tags: europe-west3-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/apps/api:${{ github.sha }}
+      # the tested image, retagged; nothing is rebuilt
+      - id: push
+        working-directory: .
+        run: |
+          docker load -i ${{ runner.temp }}/api.tar
+          docker tag api:ci "${IMAGE}:${GITHUB_SHA}"
+          docker push "${IMAGE}:${GITHUB_SHA}"
+          ref=$(docker inspect --format '{{index .RepoDigests 0}}' "${IMAGE}:${GITHUB_SHA}")
+          echo "digest=${ref#*@}" >> "$GITHUB_OUTPUT"
 
-  scan-sign:
+  sign:
     needs: push
     runs-on: ubuntu-24.04
     permissions:
@@ -105,56 +166,35 @@ jobs:
     env:
       IMAGE: europe-west3-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/apps/api@${{ needs.push.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # gitleaks scans the history, not just the last commit
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - id: auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.CI_SERVICE_ACCOUNT }}
           token_format: access_token
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: europe-west3-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
 
-      - name: Trivy image
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: ${{ env.IMAGE }}
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: "1"
-      - name: Trivy config
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: config
-          scan-ref: examples/platform/app
-          severity: CRITICAL,HIGH
-          exit-code: "1"
-
-      - uses: anchore/sbom-action@v0
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
           image: ${{ env.IMAGE }}
           format: cyclonedx-json
           output-file: sbom.cdx.json
 
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
       - name: Sign and attest by digest
+        working-directory: .
         run: |
           cosign sign --yes "$IMAGE"
           cosign attest --yes --type cyclonedx --predicate sbom.cdx.json "$IMAGE"
 
-  # The PR below only touches examples/platform/gitops/**, outside the paths filter above,
-  # so merging it does not trigger this workflow again.
+  # GKE follows env/gke, so the PR targets it and merging it is the deploy.
+  # It is opened with GITHUB_TOKEN, so no workflow runs on it; checks on deploy PRs need a PAT or GitHub App token.
   deliver:
-    needs: [push, scan-sign]
+    needs: [push, sign]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -163,7 +203,9 @@ jobs:
       IMAGE: europe-west3-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/apps/api
       DIGEST: ${{ needs.push.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: env/gke
 
       - name: Pin the digest
         working-directory: examples/platform/gitops/workloads/api/overlays/gke
@@ -173,8 +215,9 @@ jobs:
 
       # one branch, so a newer build updates the open PR instead of opening another.
       # Needs "Allow GitHub Actions to create and approve pull requests" in the repo settings.
-      - uses: peter-evans/create-pull-request@v7
+      - uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
         with:
+          base: env/gke
           branch: deploy/api-gke
           add-paths: examples/platform/gitops/**
           commit-message: "chore(api): deploy ${{ needs.push.outputs.digest }}"
@@ -182,5 +225,5 @@ jobs:
           body: |
             Image: `${{ env.IMAGE }}@${{ env.DIGEST }}`
             Commit: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
-            Scanned with Trivy, signed with cosign, SBOM attested.
+            Scanned with Trivy before push, tested on kind, signed with cosign, SBOM attested.
           labels: deploy

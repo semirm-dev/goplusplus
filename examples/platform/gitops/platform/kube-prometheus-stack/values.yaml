@@ -4,7 +4,54 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: false
     ruleSelectorNilUsesHelmValues: false
     retention: 15d
+    # without a volume a restart loses all 15 days; no storageClassName = the cluster default
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+
+alertmanager:
+  config:
+    route:
+      receiver: slack
+      routes:
+        # Watchdog always fires (it proves the pipeline is alive), InfoInhibitor only mutes
+        - receiver: "null"
+          matchers:
+            - alertname =~ "Watchdog|InfoInhibitor"
+        - receiver: slack
+          matchers:
+            - severity = page
+          group_wait: 10s
+          repeat_interval: 1h
+    receivers:
+      - name: "null"
+      - name: slack
+        slack_configs:
+          # read from the mounted secret, so the webhook URL never sits in Git or the config Secret
+          - api_url_file: /etc/alertmanager/secrets/alertmanager-slack/slack-webhook-url
+            send_resolved: true
+  alertmanagerSpec:
+    secrets:
+      - alertmanager-slack    # from OpenBao, see alertmanager-slack.yaml
+    # silences and notification state survive a restart
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 2Gi
+
 grafana:
+  # not the chart's default prom-operator password; from OpenBao, see grafana-admin.yaml
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
   additionalDataSources:
     - name: Loki
       type: loki

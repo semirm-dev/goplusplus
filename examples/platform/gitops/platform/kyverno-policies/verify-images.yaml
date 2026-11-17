@@ -7,6 +7,25 @@ metadata:
 spec:
   webhookTimeoutSeconds: 30
   rules:
+    # verifyImages skips any image it does not match, so this pins api to the CI registry
+    - name: only-ci-registry
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [api]
+      validate:
+        # Audit until every running image verifies, then Enforce
+        failureAction: Audit
+        message: "Images in api must come from europe-west3-docker.pkg.dev/*/apps/."
+        pattern:
+          spec:
+            =(initContainers):
+              - image: "europe-west3-docker.pkg.dev/*/apps/*"
+            =(ephemeralContainers):
+              - image: "europe-west3-docker.pkg.dev/*/apps/*"
+            containers:
+              - image: "europe-west3-docker.pkg.dev/*/apps/*"
     - name: signed-by-api-ci
       match:
         any:

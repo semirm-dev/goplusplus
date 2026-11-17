@@ -4,15 +4,28 @@ metadata:
   name: openbao
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    # after cert-manager: the pods mount a Certificate from platform-internal-ca
+    argocd.argoproj.io/sync-wave: "1"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: platform
-  source:
-    repoURL: https://openbao.github.io/openbao-helm
-    chart: openbao
-    targetRevision: 0.18.4
+  sources:
+    - repoURL: https://openbao.github.io/openbao-helm
+      chart: openbao
+      targetRevision: 0.18.4
+      helm:
+        valueFiles:
+          - $values/{{ .Values.basePath }}/platform/openbao/values.yaml
+          - $values/{{ .Values.basePath }}/clusters/{{ .Values.env }}/openbao.yaml
+    - repoURL: "{{ .Values.repoURL }}"
+      targetRevision: "{{ .Values.targetRevision }}"
+      ref: values
+    - repoURL: "{{ .Values.repoURL }}"
+      targetRevision: "{{ .Values.targetRevision }}"
+      path: {{ .Values.basePath }}/platform/openbao
+      directory:
+        exclude: values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: openbao

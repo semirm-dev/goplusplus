@@ -21,6 +21,8 @@ spec:
         message: "Use a digest or an immutable tag. No tag means :latest."
         pattern:
           spec:
+            =(initContainers):
+              - image: "*:* & !*:latest"
             containers:
               - image: "*:* & !*:latest"
     - name: require-requests-and-memory-limit

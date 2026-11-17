@@ -15,18 +15,31 @@ spec:
       labels:
         app.kubernetes.io/name: api
     spec:
+      serviceAccountName: api
+      # api never calls the Kubernetes API, so no token to steal (Falco alerts on a read)
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
         runAsGroup: 65532
         seccompProfile:
           type: RuntimeDefault
+      # spread replicas over nodes, so one node going down is not the whole API
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: api
       containers:
         - name: api
           image: api
           ports:
             - name: http
               containerPort: 8080
+            - name: metrics       # not behind the HTTPRoute
+              containerPort: 9090
           readinessProbe:
             httpGet:
               path: /readyz

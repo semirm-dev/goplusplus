@@ -1,0 +1,18 @@
+# Root, Argo CD itself and the AppProjects. Root needs it before `projects`
+# can sync it, so bootstrap applies this file by hand first.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: bootstrap
+  namespace: argocd
+spec:
+  description: The app-of-apps and Argo CD itself
+  sourceRepos:
+    - https://github.com/semirm-dev/goplusplus.git
+    - https://argoproj.github.io/argo-helm
+  destinations:
+    - { server: https://kubernetes.default.svc, namespace: argocd }
+  clusterResourceWhitelist:
+    - { group: apiextensions.k8s.io, kind: CustomResourceDefinition }
+    - { group: rbac.authorization.k8s.io, kind: ClusterRole }
+    - { group: rbac.authorization.k8s.io, kind: ClusterRoleBinding }

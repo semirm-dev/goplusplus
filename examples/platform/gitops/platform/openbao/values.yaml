@@ -1,0 +1,17 @@
+# Shared by both clusters. The seal and the replica count differ, so clusters/<env>/openbao.yaml
+# carries the server config.
+global:
+  tlsDisable: false   # https for clients, probes and the in-pod CLI
+server:
+  # Issued by cert-manager from platform-internal-ca (certificate.yaml),
+  # mounted at /openbao/userconfig/openbao-tls/
+  extraVolumes:
+    - type: secret
+      name: openbao-tls
+  extraEnvironmentVars:
+    BAO_CACERT: /openbao/userconfig/openbao-tls/ca.crt
+  ha:
+    enabled: true
+    raft:
+      enabled: true
+      setNodeId: true

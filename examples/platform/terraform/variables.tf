@@ -28,4 +28,15 @@ variable "emulator" {
 variable "admin_cidr" {
   description = "Only this CIDR reaches the API server, e.g. 203.0.113.7/32"
   type        = string
+
+  validation {
+    condition     = var.admin_cidr != "0.0.0.0/0"
+    error_message = "admin_cidr must not open the API server to the internet, use $(curl -s ifconfig.me)/32."
+  }
+}
+
+variable "github_repo" {
+  description = "owner/name of the repository whose workflow pushes images"
+  type        = string
+  default     = "semirm-dev/goplusplus"
 }

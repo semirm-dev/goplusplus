@@ -5,10 +5,12 @@ metadata:
   name: root
   namespace: argocd
 spec:
-  project: default
+  project: bootstrap
   source:
     repoURL: https://github.com/semirm-dev/goplusplus.git
-    targetRevision: main
+    # GKE follows env/gke, kind follows main. Promote by fast-forwarding env/gke
+    # to a commit already green on kind.
+    targetRevision: env/gke
     path: examples/platform/gitops/apps
     helm:
       valueFiles:

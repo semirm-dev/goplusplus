@@ -5,7 +5,7 @@ metadata:
   name: root
   namespace: argocd
 spec:
-  project: default
+  project: bootstrap
   source:
     repoURL: https://github.com/semirm-dev/goplusplus.git
     targetRevision: main

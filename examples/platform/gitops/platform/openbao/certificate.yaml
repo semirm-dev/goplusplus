@@ -1,0 +1,20 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openbao-tls
+  namespace: openbao
+spec:
+  secretName: openbao-tls
+  issuerRef:
+    kind: ClusterIssuer
+    name: platform-internal-ca
+  dnsNames:
+    - openbao.openbao.svc                   # what ESO calls
+    - "*.openbao-internal"                  # raft retry_join between pods
+    - "*.openbao-internal.openbao.svc"
+  ipAddresses:
+    - 127.0.0.1                             # the readiness probe and bootstrap.sh
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always

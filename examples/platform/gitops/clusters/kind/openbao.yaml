@@ -1,0 +1,21 @@
+# kind cannot reach Cloud KMS, so the seal stays Shamir and bootstrap.sh unseals by hand
+# after every pod restart. Raft anyway, so kind runs the storage GKE runs.
+server:
+  ha:
+    replicas: 1
+    raft:
+      config: |
+        ui = true
+
+        listener "tcp" {
+          address         = "[::]:8200"
+          cluster_address = "[::]:8201"
+          tls_cert_file   = "/openbao/userconfig/openbao-tls/tls.crt"
+          tls_key_file    = "/openbao/userconfig/openbao-tls/tls.key"
+        }
+
+        storage "raft" {
+          path = "/openbao/data"
+        }
+
+        service_registration "kubernetes" {}

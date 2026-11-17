@@ -1,0 +1,10 @@
+# Argo CD creates `default` with no limits. Nothing should use it, so it
+# allows no repos and no destinations.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: argocd
+spec:
+  sourceRepos: []
+  destinations: []

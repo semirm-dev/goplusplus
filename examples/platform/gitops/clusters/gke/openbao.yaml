@@ -1,0 +1,45 @@
+# Replace PROJECT_ID with the GCP project id
+server:
+  serviceAccount:
+    # Workload Identity: KSA openbao/openbao acts as this GSA, which may use the unseal key
+    annotations:
+      iam.gke.io/gcp-service-account: openbao@PROJECT_ID.iam.gserviceaccount.com
+  ha:
+    replicas: 3
+    raft:
+      config: |
+        ui = true
+
+        listener "tcp" {
+          address         = "[::]:8200"
+          cluster_address = "[::]:8201"
+          tls_cert_file   = "/openbao/userconfig/openbao-tls/tls.crt"
+          tls_key_file    = "/openbao/userconfig/openbao-tls/tls.key"
+        }
+
+        storage "raft" {
+          path = "/openbao/data"
+          # openbao-1 and -2 join whichever of these is the leader, no manual join
+          retry_join {
+            leader_api_addr     = "https://openbao-0.openbao-internal:8200"
+            leader_ca_cert_file = "/openbao/userconfig/openbao-tls/ca.crt"
+          }
+          retry_join {
+            leader_api_addr     = "https://openbao-1.openbao-internal:8200"
+            leader_ca_cert_file = "/openbao/userconfig/openbao-tls/ca.crt"
+          }
+          retry_join {
+            leader_api_addr     = "https://openbao-2.openbao-internal:8200"
+            leader_ca_cert_file = "/openbao/userconfig/openbao-tls/ca.crt"
+          }
+        }
+
+        # Node upgrades restart pods; Cloud KMS unseals them without a human
+        seal "gcpckms" {
+          project    = "PROJECT_ID"
+          region     = "europe-west3"
+          key_ring   = "platform-keyring"
+          crypto_key = "platform-openbao-unseal"
+        }
+
+        service_registration "kubernetes" {}

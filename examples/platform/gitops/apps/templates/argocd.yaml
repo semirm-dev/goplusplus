@@ -9,7 +9,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  project: default
+  project: bootstrap
   sources:
     - repoURL: https://argoproj.github.io/argo-helm
       chart: argo-cd
@@ -29,3 +29,38 @@ spec:
       selfHeal: true
     syncOptions:
       - ServerSideApply=true
+---
+# The Dex secret is its own app: the ExternalSecret CRD arrives in wave 0, after
+# Argo CD's wave -1, and a failed sync there would stall root at wave -1.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: bootstrap
+  source:
+    repoURL: "{{ .Values.repoURL }}"
+    targetRevision: "{{ .Values.targetRevision }}"
+    path: {{ .Values.basePath }}/platform/argocd
+    directory:
+      exclude: values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

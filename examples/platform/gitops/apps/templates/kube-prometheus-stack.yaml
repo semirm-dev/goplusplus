@@ -19,6 +19,11 @@ spec:
     - repoURL: "{{ .Values.repoURL }}"
       targetRevision: "{{ .Values.targetRevision }}"
       ref: values
+    - repoURL: "{{ .Values.repoURL }}"
+      targetRevision: "{{ .Values.targetRevision }}"
+      path: {{ .Values.basePath }}/platform/kube-prometheus-stack
+      directory:
+        exclude: values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -29,3 +34,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true   # ExternalSecret CRDs may not exist yet on first sync
